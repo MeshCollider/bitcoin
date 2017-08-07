@@ -46,6 +46,7 @@ install:
 before_script:
     - if [ "$CHECK_DOC" = 1 -a "$TRAVIS_EVENT_TYPE" = "pull_request" ]; then contrib/devtools/commit-script-check.sh $TRAVIS_COMMIT_RANGE; fi
     - if [ "$CHECK_DOC" = 1 ]; then contrib/devtools/check-doc.py; fi
+    - if [ "$CHECK_DOC" = 1 ]; then contrib/devtools/lint-all.sh; fi
     - unset CC; unset CXX
     - rm -rf ~/.bitcoin
     - mkdir -p depends/SDKs depends/sdk-sources
