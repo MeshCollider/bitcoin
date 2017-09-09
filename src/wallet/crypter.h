@@ -160,14 +160,11 @@ public:
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;
     bool HaveKey(const CKeyID &address) const override
     {
-        {
-            LOCK(cs_KeyStore);
-            if (!IsCrypted()) {
-                return CBasicKeyStore::HaveKey(address);
-            }
-            return mapCryptedKeys.count(address) > 0;
+        LOCK(cs_KeyStore);
+        if (!IsCrypted()) {
+            return CBasicKeyStore::HaveKey(address);
         }
-        return false;
+        return mapCryptedKeys.count(address) > 0;
     }
     bool GetKey(const CKeyID &address, CKey& keyOut) const override;
     bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const override;
