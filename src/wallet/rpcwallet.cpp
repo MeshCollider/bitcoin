@@ -173,10 +173,10 @@ UniValue getnewaddress(const JSONRPCRequest& request)
     return EncodeDestination(keyID);
 }
 
-void DeleteAccount(CWallet * const pwallet, std::string strAccount)
+void DeleteAccount(CWallet * const pwallet, std::string account_name)
 {
     CWalletDB walletdb(pwallet->GetDBHandle());
-    walletdb.EraseAccount(strAccount);
+    walletdb.EraseAccount(account_name);
 }
 
 CTxDestination GetAccountAddress(CWallet* const pwallet, std::string strAccount, bool bForceNew=false)
@@ -3321,7 +3321,7 @@ UniValue getlabeladdress(const JSONRPCRequest& request)
 
     UniValue ret(UniValue::VSTR);
 
-    ret = GetAccountAddress(pwallet, strLabel).ToString();
+    ret = EncodeDestination(GetAccountAddress(pwallet, strLabel));
     return ret;
 }
 
@@ -3336,11 +3336,11 @@ static UniValue AddressBookDataToJSON(const CAddressBookData& data, bool verbose
     }
     ret.push_back(Pair("purpose", data.purpose));
     if (verbose) {
-        UniValue ddata(UniValue::VOBJ);
+        UniValue dest_data(UniValue::VOBJ);
         for (const std::pair<std::string, std::string>& item : data.destdata) {
-            ddata.push_back(Pair(item.first, item.second));
+            dest_data.push_back(Pair(item.first, item.second));
         }
-        ret.push_back(Pair("destdata", ddata));
+        ret.push_back(Pair("destdata", dest_data));
     }
     return ret;
 }
@@ -3362,6 +3362,7 @@ UniValue getlabel(const JSONRPCRequest& request)
             "  { (json object with information about address)\n"
             "    \"name\": \"labelname\" (string) The label\n"
             "    \"purpose\": \"string\" (string) Purpose of address (\"send\" for sending address, \"receive\" for receiving address)\n"
+            "    \"destdata\": { (json object of destination-data key value pairs) }\n"
             "  },...\n"
             "  Result is null if there is no record for this address.\n"
             "\nExamples:\n"
@@ -3371,12 +3372,12 @@ UniValue getlabel(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    CBitcoinAddress address(request.params[0].get_str());
-    if (!address.IsValid()) {
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
     }
 
-    std::map<CTxDestination, CAddressBookData>::iterator mi = pwallet->mapAddressBook.find(address.Get());
+    std::map<CTxDestination, CAddressBookData>::iterator mi = pwallet->mapAddressBook.find(dest);
     if (mi != pwallet->mapAddressBook.end()) {
         return AddressBookDataToJSON((*mi).second, true);
     }
@@ -3413,9 +3414,9 @@ UniValue getaddressesbylabel(const JSONRPCRequest& request)
 
     // Find all addresses that have the given label
     UniValue ret(UniValue::VOBJ);
-    for (const std::pair<CBitcoinAddress, CAddressBookData>& item : pwallet->mapAddressBook) {
+    for (const std::pair<CTxDestination, CAddressBookData>& item : pwallet->mapAddressBook) {
         if (item.second.name == strLabel) {
-            ret.push_back(Pair(item.first.ToString(), AddressBookDataToJSON(item.second, false)));
+            ret.push_back(Pair(EncodeDestination(item.first), AddressBookDataToJSON(item.second, false)));
         }
     }
     return ret;
@@ -3433,7 +3434,7 @@ UniValue listlabels(const JSONRPCRequest& request)
             "listlabels ( \"purpose\" )\n"
             "\nReturns the list of all labels, or labels that are assigned to addresses with a specific purpose.\n"
             "\nArguments:\n"
-            "1. \"purpose\"  (string, optional) Address purpose to list labels for ('send','receive'). An empty string is the same as not providing this argument.\n"
+            "1. \"purpose\"  (string, optional) Address purpose to list labels for ('send','receive').\n"
             "\nResult:\n"
             "[                      (json array of string)\n"
             "  \"label\",  (string) Label name\n"
@@ -3450,16 +3451,17 @@ UniValue listlabels(const JSONRPCRequest& request)
             + HelpExampleRpc("listlabels", "receive")
         );
 
+    ObserveSafeMode();
     LOCK2(cs_main, pwallet->cs_wallet);
 
     std::string purpose;
-    if (request.params.size() > 0) {
+    if (!request.params[0].isNull()) {
         purpose = request.params[0].get_str();
     }
 
     std::set<std::string> setLabels;
     for (const std::pair<CTxDestination, CAddressBookData>& entry : pwallet->mapAddressBook) {
-        if (purpose.empty() || entry.second.purpose == purpose){
+        if (purpose.empty() || entry.second.purpose == purpose) {
             setLabels.insert(entry.second.name);
         }
     }
@@ -3480,11 +3482,11 @@ UniValue setlabel(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
         throw std::runtime_error(
-            "setlabel \"bitcoinaddress\" \"label\"\n"
+            "setlabel \"bitcoinaddress\" ( \"label\" )\n"
             "\nSets the label associated with the given address.\n"
             "\nArguments:\n"
             "1. \"bitcoinaddress\"  (string, required) The bitcoin address to be associated with an label.\n"
-            "2. \"label\"           (string, required) The label to assign to the address.\n"
+            "2. \"label\"           (string, optional) The label to assign to the address. If not provided, the label for the address will be removed.\n"
             "\nExamples:\n"
             + HelpExampleCli("setlabel", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XZ\" \"tabby\"")
             + HelpExampleRpc("setlabel", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XZ\", \"tabby\"")
@@ -3492,31 +3494,30 @@ UniValue setlabel(const JSONRPCRequest& request)
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    CBitcoinAddress address(request.params[0].get_str());
-    if (!address.IsValid()) {
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
     }
 
     std::string strLabel;
-    if (request.params.size() > 1){
+    if (!request.params[1].isNull()) {
         strLabel = AccountFromValue(request.params[1]);
     }
 
-    if (IsMine(*pwallet, address.Get()))
-    {
+    if (IsMine(*pwallet, dest)) {
         // Detect when changing the label of an address that is the 'label address' of another label:
         // If so, delete the account record for it. Labels, unlike addresses can be deleted,
         // and we wouldn't do this, the record would stick around forever.
-        if (pwallet->mapAddressBook.count(address.Get()))
+        if (pwallet->mapAddressBook.count(dest))
         {
-            std::string strOldLabel = pwallet->mapAddressBook[address.Get()].name;
-            if (strOldLabel != strLabel && address == GetAccountAddress(pwallet, strOldLabel)) {
+            std::string strOldLabel = pwallet->mapAddressBook[dest].name;
+            if (strOldLabel != strLabel && dest == GetAccountAddress(pwallet, strOldLabel)) {
                 DeleteAccount(pwallet, strOldLabel);
             }
         }
-        pwallet->SetAddressBook(address.Get(), strLabel, "receive");
+        pwallet->SetAddressBook(dest, strLabel, "receive");
     } else {
-        pwallet->SetAddressBook(address.Get(), strLabel, "send");
+        pwallet->SetAddressBook(dest, strLabel, "send");
     }
 
     return NullUniValue;

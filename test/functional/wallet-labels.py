@@ -62,8 +62,7 @@ def overwrite_label(node, old_label, address_idx, is_label_address, new_label):
     new_label.verify(node)
 
 class WalletLabelsTest(BitcoinTestFramework):
-    def __init__(self):
-        super().__init__()
+    def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 1
 
@@ -85,8 +84,7 @@ class WalletLabelsTest(BitcoinTestFramework):
             label.verify(node)
 
         # Check all labels are returned by listlabels.
-        assert_equal(node.listlabels(),
-                     [""] + [label.name for label in labels])
+        assert_equal(node.listlabels(), [label.name for label in labels])
 
         # Send a transaction to each address, and make sure this forces
         # getlabeladdress to generate new unused addresses.
