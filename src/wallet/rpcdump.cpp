@@ -640,6 +640,8 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     const std::map<CKeyID, int64_t>& mapKeyPool = pwallet->GetAllReserveKeys();
     pwallet->GetKeyBirthTimes(mapKeyBirth);
 
+    std::set<CScriptID> scripts = pwallet->GetCScripts();
+
     // sort time/key pairs
     std::vector<std::pair<int64_t, CKeyID> > vKeyBirth;
     for (const auto& entry : mapKeyBirth) {
@@ -647,10 +649,7 @@ UniValue dumpwallet(const JSONRPCRequest& request)
             vKeyBirth.push_back(std::make_pair(entry.second, *keyID));
         }
     }
-    mapKeyBirth.clear();
     std::sort(vKeyBirth.begin(), vKeyBirth.end());
-
-    std::set<CScriptID> set_scripts = pwallet->GetCScripts();
 
     // produce output
     file << strprintf("# Wallet dump created by Bitcoin %s\n", CLIENT_BUILD);
@@ -696,20 +695,31 @@ UniValue dumpwallet(const JSONRPCRequest& request)
         }
     }
     file << "\n";
-    for (const CScriptID &scriptid : set_scripts) {
+    for (const CScriptID &scriptid : scripts) {
         CScript script;
-        // TODO: time?
-        //std::string dump_time = EncodeDumpTime(it->first);
-        //std::string address = EncodeDestination(scriptid);
+        std::string dump_time = "0";
+        bool is_p2sh = script.IsPayToScriptHash();
+
+        std::map<CTxDestination, int64_t>::iterator it = mapKeyBirth.find(scriptid);
+        if(is_p2sh && it != mapKeyBirth.end()) {
+            dump_time = EncodeDumpTime(it->second);
+        }
+
+        std::string address = EncodeDestination(scriptid);
         if(pwallet->GetCScript(scriptid, script)) {
-            file << strprintf("%s now script=1", HexStr(script.begin(), script.end()));
-            // TODO: print address too?
-            //file << strprintf(" # addr=%s\n", address);
+            file << strprintf("%s %s ", HexStr(script.begin(), script.end()), dump_time);
+            if (is_p2sh) {
+                file << strprintf("p2sh=1 # addr=%s\n", address);
+            } else {
+                file << strprintf("script=1\n");
+            }
         }
     }
     file << "\n";
     file << "# End of dump\n";
     file.close();
+
+    mapKeyBirth.clear();
 
     UniValue reply(UniValue::VOBJ);
     reply.push_back(Pair("filename", filepath.string()));
