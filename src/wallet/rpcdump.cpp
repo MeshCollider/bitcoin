@@ -650,6 +650,8 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     mapKeyBirth.clear();
     std::sort(vKeyBirth.begin(), vKeyBirth.end());
 
+    std::set<CScriptID> set_scripts = pwallet->GetCScripts();
+
     // produce output
     file << strprintf("# Wallet dump created by Bitcoin %s\n", CLIENT_BUILD);
     file << strprintf("# * Created on %s\n", EncodeDumpTime(GetTime()));
@@ -691,6 +693,18 @@ UniValue dumpwallet(const JSONRPCRequest& request)
                 file << "change=1";
             }
             file << strprintf(" # addr=%s%s\n", strAddr, (pwallet->mapKeyMetadata[keyid].hdKeypath.size() > 0 ? " hdkeypath="+pwallet->mapKeyMetadata[keyid].hdKeypath : ""));
+        }
+    }
+    file << "\n";
+    for (const CScriptID &scriptid : set_scripts) {
+        CScript script;
+        // TODO: time?
+        //std::string dump_time = EncodeDumpTime(it->first);
+        //std::string address = EncodeDestination(scriptid);
+        if(pwallet->GetCScript(scriptid, script)) {
+            file << strprintf("%s now script=1", HexStr(script.begin(), script.end()));
+            // TODO: print address too?
+            //file << strprintf(" # addr=%s\n", address);
         }
     }
     file << "\n";
