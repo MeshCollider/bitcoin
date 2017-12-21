@@ -77,6 +77,7 @@ endif
 BITCOIN_CORE_H = \
   addrdb.h \
   addrman.h \
+  args.h \
   base58.h \
   bech32.h \
   bloom.h \
@@ -344,6 +345,7 @@ libbitcoin_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_util_a_SOURCES = \
   support/lockedpool.cpp \
+  args.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
   compat/glibc_sanity.cpp \
