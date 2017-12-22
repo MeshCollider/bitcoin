@@ -15,12 +15,29 @@
 #include <string>
 #include <vector>
 
+// Type of argument value, for validation
+enum ArgValueType {
+    ARG_BOOL = 0,
+    ARG_INT = 1,
+    ARG_STRING = 2,
+    ARG_STRING_VEC = 3,
+};
+
+class ArgumentEntry
+{
+public:
+    std::string name;
+    ArgValueType arg_type;
+    void* destination_var;
+};
+
 class ArgsManager
 {
 protected:
     mutable CCriticalSection cs_args;
     std::map<std::string, std::string> mapArgs;
     std::map<std::string, std::vector<std::string>> mapMultiArgs;
+    std::map<std::string, const ArgumentEntry*> arguments;
 public:
     void ParseParameters(int argc, const char*const argv[]);
     void ReadConfigFile(const std::string& confPath);
@@ -89,6 +106,13 @@ public:
     // Forces an arg setting. Called by SoftSetArg() if the arg hasn't already
     // been set. Also called directly in testing.
     void ForceSetArg(const std::string& strArg, const std::string& strValue);
+
+    // Sets arg using reference table and in mapArgs but does not touch mapMultiArgs
+    void SetArg(const std::string& arg_name, const std::string& arg_value);
+
+    // Provide the ArgsManager a reference to a global variable to be set
+    // to the value of the corresponding command-line argument
+    void RegisterArg(const std::string& name, const ArgumentEntry* arg_entry);
 };
 
 extern ArgsManager gArgs;

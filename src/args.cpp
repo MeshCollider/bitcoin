@@ -64,6 +64,8 @@ void ArgsManager::ParseParameters(int argc, const char* const argv[])
 
         mapArgs[str] = strValue;
         mapMultiArgs[str].push_back(strValue);
+
+        SetArg(str, strValue);
     }
 }
 
@@ -124,8 +126,34 @@ bool ArgsManager::SoftSetBoolArg(const std::string& strArg, bool fValue)
 void ArgsManager::ForceSetArg(const std::string& strArg, const std::string& strValue)
 {
     LOCK(cs_args);
-    mapArgs[strArg] = strValue;
     mapMultiArgs[strArg] = {strValue};
+    SetArg(strArg, strValue);
+}
+
+void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value) {
+    LOCK(cs_args);
+
+    mapArgs[arg_name] = arg_value;
+
+    auto it = arguments.find(arg_name);
+    if (it != arguments.end()) {
+        const ArgumentEntry* arg = it->second;
+        if (arg->arg_type == ARG_BOOL) {
+            bool value = InterpretBool(arg_value);
+            *static_cast<bool*>(arg->destination_var) = value;
+        } else if (arg->arg_type == ARG_INT) {
+            int value = atoi(arg_value);
+            *static_cast<int*>(arg->destination_var) = value;
+        } else if (arg->arg_type == ARG_STRING) {
+            *static_cast<std::string*>(arg->destination_var) = arg_value;
+        } else if (arg->arg_type == ARG_STRING_VEC) {
+            static_cast<std::vector<std::string>*>(arg->destination_var)->push_back(arg_value);
+        }
+    } else {
+        // print error because this argument is unrecognised
+        // TODO: uncomment this when all args are converted:
+        //throw std::runtime_error(strprintf("unrecognised argument \"%s\". Please use -? or -help for more information.", str));
+    }
 }
 
 void ArgsManager::ReadConfigFile(const std::string& confPath)
@@ -146,13 +174,19 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
             std::string strValue = it->value[0];
             InterpretNegativeSetting(strKey, strValue);
             if (mapArgs.count(strKey) == 0)
-                mapArgs[strKey] = strValue;
+                SetArg(strKey, strValue);
             mapMultiArgs[strKey].push_back(strValue);
         }
     }
     // If datadir is changed in .conf file:
     ClearDatadirCache();
     if (!fs::is_directory(GetDataDir(false))) {
-        throw std::runtime_error(strprintf("specified data directory \"%s\" does not exist.", gArgs.GetArg("-datadir", "").c_str()));
+        throw std::runtime_error(strprintf("specified data directory \"%s\" does not exist.", g_file_args.datadir.c_str()));
     }
+}
+
+void ArgsManager::RegisterArg(const std::string& name, const ArgumentEntry* arg_entry)
+{
+    LOCK(cs_args);
+    arguments[name] = arg_entry;
 }
