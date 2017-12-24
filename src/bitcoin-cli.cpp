@@ -7,6 +7,7 @@
 #include <config/bitcoin-config.h>
 #endif
 
+#include <args.h>
 #include <chainparamsbase.h>
 #include <clientversion.h>
 #include <fs.h>
@@ -27,6 +28,30 @@ static const char DEFAULT_RPCCONNECT[] = "127.0.0.1";
 static const int DEFAULT_HTTP_CLIENT_TIMEOUT=900;
 static const bool DEFAULT_NAMED=false;
 static const int CONTINUE_EXECUTION=-1;
+
+struct CLIArguments {
+    bool show_help;
+    bool show_version;
+    bool getinfo;
+} g_cli_args;
+
+static const ArgumentEntry cliArgs[] =
+{ //  name            type       global variable
+  //  --------------  ---------- ------------------------
+    {"-help",         ARG_BOOL,  &g_cli_args.show_help},
+    {"-?",            ARG_BOOL,  &g_cli_args.show_help},
+    {"-h",            ARG_BOOL,  &g_cli_args.show_help},
+    {"-version",      ARG_BOOL,  &g_cli_args.show_version},
+    {"-getinfo",      ARG_BOOL,  &g_cli_args.getinfo},
+};
+
+void RegisterCLIArguments() {
+    RegisterFileArguments();
+    RegisterChainArguments();
+    for (unsigned int i = 0; i < ARRAYLEN(cliArgs); i++) {
+        gArgs.RegisterArg(cliArgs[i].name, &cliArgs[i]);
+    }
+}
 
 std::string HelpMessageCli()
 {
@@ -81,11 +106,11 @@ static int AppInitRPC(int argc, char* argv[])
     //
     // Parameters
     //
-    RegisterCLIArgs();
-    gArgs.ParseParameters(argc, argv);
-    if (argc<2 || gArgs.IsArgSet("-?") || gArgs.IsArgSet("-h") || gArgs.IsArgSet("-help") || gArgs.IsArgSet("-version")) {
+    RegisterCLIArguments();
+    gArgs.ParseParameters(argc, argv, true);
+    if (argc<2 || g_cli_args.show_help || g_cli_args.show_version) {
         std::string strUsage = strprintf(_("%s RPC client version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n";
-        if (!gArgs.IsArgSet("-version")) {
+        if (!g_cli_args.show_version) {
             strUsage += "\n" + _("Usage:") + "\n" +
                   "  bitcoin-cli [options] <command> [params]  " + strprintf(_("Send command to %s"), _(PACKAGE_NAME)) + "\n" +
                   "  bitcoin-cli [options] -named <command> [name=value] ... " + strprintf(_("Send command to %s (with named arguments)"), _(PACKAGE_NAME)) + "\n" +
@@ -407,7 +432,7 @@ int CommandLineRPC(int argc, char *argv[])
         }
         std::unique_ptr<BaseRequestHandler> rh;
         std::string method;
-        if (gArgs.GetBoolArg("-getinfo", false)) {
+        if (g_cli_args.getinfo) {
             rh.reset(new GetinfoRequestHandler());
             method = "";
         } else {

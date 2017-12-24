@@ -51,14 +51,26 @@ void SelectBaseParams(const std::string& chain)
 
 std::string ChainNameFromCommandLine()
 {
-    bool fRegTest = gArgs.GetBoolArg("-regtest", false);
-    bool fTestNet = gArgs.GetBoolArg("-testnet", false);
-
-    if (fTestNet && fRegTest)
+    if (g_chain_args.testnet && g_chain_args.regtest)
         throw std::runtime_error("Invalid combination of -regtest and -testnet.");
-    if (fRegTest)
+    if (g_chain_args.regtest)
         return CBaseChainParams::REGTEST;
-    if (fTestNet)
+    if (g_chain_args.testnet)
         return CBaseChainParams::TESTNET;
     return CBaseChainParams::MAIN;
+}
+
+ChainArguments g_chain_args;
+
+static const ArgumentEntry chainArgs[] =
+{ //  name            type       global variable
+  //  --------------  ---------- ------------------------
+    {"-regtest",      ARG_BOOL,  &g_chain_args.regtest},
+    {"-testnet",      ARG_BOOL,  &g_chain_args.testnet},
+};
+
+void RegisterChainArguments() {
+    for (unsigned int i = 0; i < ARRAYLEN(chainArgs); i++) {
+        gArgs.RegisterArg(chainArgs[i].name, &chainArgs[i]);
+    }
 }

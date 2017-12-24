@@ -60,4 +60,9 @@ void SelectBaseParams(const std::string& chain);
  */
 std::string ChainNameFromCommandLine();
 
+extern struct ChainArguments {
+    bool testnet;
+    bool regtest;
+} g_chain_args;
+
 #endif // BITCOIN_CHAINPARAMSBASE_H
