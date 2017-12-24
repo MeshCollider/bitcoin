@@ -1762,7 +1762,11 @@ MetaArguments g_meta_args;
 static const ArgumentEntry metaArgs[] =
 { //  name            type       global variable
   //  --------------  ---------- ------------------------
-    {"-help-debug",   ARG_BOOL,  &g_meta_args.show_debug}
+    {"-help-debug",   ARG_BOOL,  &g_meta_args.show_debug},
+    {"-help",         ARG_BOOL,  &g_meta_args.show_help},
+    {"-?",            ARG_BOOL,  &g_meta_args.show_help},
+    {"-h",            ARG_BOOL,  &g_meta_args.show_help},
+    {"-version",      ARG_BOOL,  &g_meta_args.show_version},
 };
 
 void RegisterMetaArguments() {

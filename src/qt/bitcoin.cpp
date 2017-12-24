@@ -607,9 +607,9 @@ int main(int argc, char *argv[])
 
     // Show help message immediately after parsing command-line options (for "-lang") and setting locale,
     // but before showing splash screen.
-    if (gArgs.IsArgSet("-?") || gArgs.IsArgSet("-h") || gArgs.IsArgSet("-help") || gArgs.IsArgSet("-version"))
+    if (g_meta_args.show_help || g_meta_args.show_version)
     {
-        HelpMessageDialog help(nullptr, gArgs.IsArgSet("-version"));
+        HelpMessageDialog help(nullptr, g_meta_args.show_version);
         help.showOrPrint();
         return EXIT_SUCCESS;
     }
