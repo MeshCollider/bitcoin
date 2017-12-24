@@ -812,6 +812,7 @@ static const ArgumentEntry fileArgs[] =
 { //  name            type          global variable
   //  --------------  ------------- ------------------------
     {"-datadir",      ARG_STRING,   &g_file_args.datadir},
+    {"-conf",         ARG_STRING,   &g_file_args.conf},
 };
 
 void RegisterFileArguments() {

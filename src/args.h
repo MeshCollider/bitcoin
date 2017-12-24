@@ -132,4 +132,10 @@ static inline void RegisterAllArgs()
     RegisterFileArguments();
 }
 
+static inline void RegisterCLIArgs()
+{
+    RegisterMetaArguments();
+    RegisterFileArguments();
+}
+
 #endif // BITCOIN_ARGS_H

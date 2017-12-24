@@ -280,6 +280,7 @@ std::unique_ptr<T> MakeUnique(Args&&... args)
 
 extern struct FileArguments {
     std::string datadir;
+    std::string conf;
 } g_file_args;
 
 #endif // BITCOIN_UTIL_H

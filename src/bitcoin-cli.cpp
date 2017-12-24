@@ -81,6 +81,7 @@ static int AppInitRPC(int argc, char* argv[])
     //
     // Parameters
     //
+    RegisterCLIArgs();
     gArgs.ParseParameters(argc, argv);
     if (argc<2 || gArgs.IsArgSet("-?") || gArgs.IsArgSet("-h") || gArgs.IsArgSet("-help") || gArgs.IsArgSet("-version")) {
         std::string strUsage = strprintf(_("%s RPC client version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n";
@@ -102,11 +103,12 @@ static int AppInitRPC(int argc, char* argv[])
         return EXIT_SUCCESS;
     }
     if (!fs::is_directory(GetDataDir(false))) {
-        fprintf(stderr, "Error: Specified data directory \"%s\" does not exist.\n", gArgs.GetArg("-datadir", "").c_str());
+        fprintf(stderr, "Error: Specified data directory \"%s\" does not exist.\n", g_file_args.datadir.c_str());
         return EXIT_FAILURE;
     }
     try {
-        gArgs.ReadConfigFile(gArgs.GetArg("-conf", BITCOIN_CONF_FILENAME));
+        if (g_file_args.conf.empty()) g_file_args.conf = BITCOIN_CONF_FILENAME;
+        gArgs.ReadConfigFile(g_file_args.conf);
     } catch (const std::exception& e) {
         fprintf(stderr,"Error reading configuration file: %s\n", e.what());
         return EXIT_FAILURE;
