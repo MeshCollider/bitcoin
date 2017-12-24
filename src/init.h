@@ -18,6 +18,8 @@ class thread_group;
 
 extern struct MetaArguments {
     bool show_debug;
+    bool show_help;
+    bool show_version;
 } g_meta_args;
 
 void StartShutdown();
