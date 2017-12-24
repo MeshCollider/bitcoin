@@ -191,7 +191,7 @@ bool Intro::pickDataDirectory()
     QSettings settings;
     /* If data directory provided on command line, no need to look at settings
        or show a picking dialog */
-    if(!gArgs.GetArg("-datadir", "").empty())
+    if(!g_file_args.datadir.empty())
         return true;
     /* 1) Default data directory for operating system */
     QString dataDir = getDefaultDataDirectory();
@@ -233,8 +233,8 @@ bool Intro::pickDataDirectory()
      * override -datadir in the bitcoin.conf file in the default data directory
      * (to be consistent with bitcoind behavior)
      */
-    if(dataDir != getDefaultDataDirectory())
-        gArgs.SoftSetArg("-datadir", GUIUtil::qstringToBoostPath(dataDir).string()); // use OS locale for path setting
+    if(dataDir != getDefaultDataDirectory() && g_file_args.datadir.empty())
+        g_file_args.datadir = dataDir.toStdString(); // use OS locale for path setting
     return true;
 }
 

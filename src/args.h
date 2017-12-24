@@ -124,10 +124,12 @@ public:
 extern ArgsManager gArgs;
 
 void RegisterMetaArguments();
+void RegisterFileArguments();
 
 static inline void RegisterAllArgs()
 {
     RegisterMetaArguments();
+    RegisterFileArguments();
 }
 
 #endif // BITCOIN_ARGS_H

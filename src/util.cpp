@@ -497,8 +497,8 @@ const fs::path &GetDataDir(bool fNetSpecific)
     if (!path.empty())
         return path;
 
-    if (gArgs.IsArgSet("-datadir")) {
-        path = fs::system_complete(gArgs.GetArg("-datadir", ""));
+    if (!g_file_args.datadir.empty()) {
+        path = fs::system_complete(g_file_args.datadir);
         if (!fs::is_directory(path)) {
             path = "";
             return path;
@@ -804,4 +804,18 @@ int64_t GetStartupTime()
 fs::path AbsPathForConfigVal(const fs::path& path, bool net_specific)
 {
     return fs::absolute(path, GetDataDir(net_specific));
+}
+
+FileArguments g_file_args;
+
+static const ArgumentEntry fileArgs[] =
+{ //  name            type          global variable
+  //  --------------  ------------- ------------------------
+    {"-datadir",      ARG_STRING,   &g_file_args.datadir},
+};
+
+void RegisterFileArguments() {
+    for (unsigned int i = 0; i < ARRAYLEN(fileArgs); i++) {
+        gArgs.RegisterArg(fileArgs[i].name, &fileArgs[i]);
+    }
 }
