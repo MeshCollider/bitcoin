@@ -33,16 +33,24 @@ struct CLIArguments {
     bool show_help;
     bool show_version;
     bool getinfo;
+    bool rpcssl;
+    bool named;
+    std::string rpc_connect;
+    int rpc_port;
 } g_cli_args;
 
 static const ArgumentEntry cliArgs[] =
-{ //  name            type       global variable
-  //  --------------  ---------- ------------------------
-    {"-help",         ARG_BOOL,  &g_cli_args.show_help},
-    {"-?",            ARG_BOOL,  &g_cli_args.show_help},
-    {"-h",            ARG_BOOL,  &g_cli_args.show_help},
-    {"-version",      ARG_BOOL,  &g_cli_args.show_version},
-    {"-getinfo",      ARG_BOOL,  &g_cli_args.getinfo},
+{ //  name            type        global variable
+  //  --------------  ----------- ------------------------
+    {"-help",         ARG_BOOL,    &g_cli_args.show_help},
+    {"-?",            ARG_BOOL,    &g_cli_args.show_help},
+    {"-h",            ARG_BOOL,    &g_cli_args.show_help},
+    {"-version",      ARG_BOOL,    &g_cli_args.show_version},
+    {"-getinfo",      ARG_BOOL,    &g_cli_args.getinfo},
+    {"-rpcssl",       ARG_BOOL,    &g_cli_args.rpcssl},
+    {"-named",        ARG_BOOL,    &g_cli_args.named},
+    {"-rpcconnect",   ARG_STRING,  &g_cli_args.rpc_connect},
+    {"-rpcport",      ARG_INT,     &g_cli_args.rpc_port},
 };
 
 void RegisterCLIArguments() {
@@ -145,7 +153,7 @@ static int AppInitRPC(int argc, char* argv[])
         fprintf(stderr, "Error: %s\n", e.what());
         return EXIT_FAILURE;
     }
-    if (gArgs.GetBoolArg("-rpcssl", false))
+    if (g_cli_args.rpcssl)
     {
         fprintf(stderr, "Error: SSL mode for RPC (-rpcssl) is no longer supported.\n");
         return EXIT_FAILURE;
@@ -297,7 +305,7 @@ public:
     UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
     {
         UniValue params;
-        if(gArgs.GetBoolArg("-named", DEFAULT_NAMED)) {
+        if(g_cli_args.named) {
             params = RPCConvertNamedValues(method, args);
         } else {
             params = RPCConvertValues(method, args);
@@ -319,8 +327,9 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
     //     2. port in -rpcconnect (ie following : in ipv4 or ]: in ipv6)
     //     3. default port for chain
     int port = BaseParams().RPCPort();
-    SplitHostPort(gArgs.GetArg("-rpcconnect", DEFAULT_RPCCONNECT), port, host);
-    port = gArgs.GetArg("-rpcport", port);
+    if (g_cli_args.rpc_connect.empty()) g_cli_args.rpc_connect = DEFAULT_RPCCONNECT;
+    SplitHostPort(g_cli_args.rpc_connect, port, host);
+    port = g_cli_args.rpc_port;
 
     // Obtain event base
     raii_event_base base = obtain_event_base();
