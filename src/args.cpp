@@ -31,7 +31,7 @@ static void InterpretNegativeSetting(std::string& strKey, std::string& strValue)
     }
 }
 
-void ArgsManager::ParseParameters(int argc, const char* const argv[])
+void ArgsManager::ParseParameters(int argc, const char* const argv[], bool ignore_extra)
 {
     LOCK(cs_args);
     mapArgs.clear();
@@ -65,7 +65,7 @@ void ArgsManager::ParseParameters(int argc, const char* const argv[])
         mapArgs[str] = strValue;
         mapMultiArgs[str].push_back(strValue);
 
-        SetArg(str, strValue);
+        SetArg(str, strValue, ignore_extra);
     }
 }
 
@@ -130,7 +130,7 @@ void ArgsManager::ForceSetArg(const std::string& strArg, const std::string& strV
     SetArg(strArg, strValue);
 }
 
-void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value) {
+void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra) {
     LOCK(cs_args);
 
     mapArgs[arg_name] = arg_value;
@@ -149,7 +149,7 @@ void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_val
         } else if (arg->arg_type == ARG_STRING_VEC) {
             static_cast<std::vector<std::string>*>(arg->destination_var)->push_back(arg_value);
         }
-    } else {
+    } else if (!ignore_extra) {
         // print error because this argument is unrecognised
         // TODO: uncomment this when all args are converted:
         //throw std::runtime_error(strprintf("unrecognised argument \"%s\". Please use -? or -help for more information.", str));

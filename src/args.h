@@ -45,7 +45,7 @@ protected:
     std::map<std::string, std::vector<std::string>> mapMultiArgs;
     std::map<std::string, const ArgumentEntry*> arguments;
 public:
-    void ParseParameters(int argc, const char*const argv[]);
+    void ParseParameters(int argc, const char*const argv[], bool ignore_extra=false);
     void ReadConfigFile(const std::string& confPath);
 
     /**
@@ -114,7 +114,7 @@ public:
     void ForceSetArg(const std::string& strArg, const std::string& strValue);
 
     // Sets arg using reference table and in mapArgs but does not touch mapMultiArgs
-    void SetArg(const std::string& arg_name, const std::string& arg_value);
+    void SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra=false);
 
     // Provide the ArgsManager a reference to a global variable to be set
     // to the value of the corresponding command-line argument
@@ -125,17 +125,13 @@ extern ArgsManager gArgs;
 
 void RegisterMetaArguments();
 void RegisterFileArguments();
+void RegisterChainArguments();
 
 static inline void RegisterAllArgs()
 {
     RegisterMetaArguments();
     RegisterFileArguments();
-}
-
-static inline void RegisterCLIArgs()
-{
-    RegisterMetaArguments();
-    RegisterFileArguments();
+    RegisterChainArguments();
 }
 
 #endif // BITCOIN_ARGS_H
