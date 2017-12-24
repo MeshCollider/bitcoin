@@ -8,6 +8,7 @@
 
 #include <qt/bitcoingui.h>
 
+#include <args.h>
 #include <chainparams.h>
 #include <qt/clientmodel.h>
 #include <fs.h>
@@ -546,6 +547,7 @@ WId BitcoinApplication::getMainWinId() const
 int main(int argc, char *argv[])
 {
     SetupEnvironment();
+    RegisterAllArgs();
 
     /// 1. Parse command-line options. These take precedence over anything else.
     // Command-line options take precedence:

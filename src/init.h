@@ -16,6 +16,10 @@ namespace boost
 class thread_group;
 } // namespace boost
 
+extern struct MetaArguments {
+    bool show_debug;
+} g_meta_args;
+
 void StartShutdown();
 bool ShutdownRequested();
 /** Interrupt threads */
