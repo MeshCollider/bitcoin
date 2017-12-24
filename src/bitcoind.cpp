@@ -7,6 +7,7 @@
 #include <config/bitcoin-config.h>
 #endif
 
+#include <args.h>
 #include <chainparams.h>
 #include <clientversion.h>
 #include <compat.h>
@@ -71,6 +72,7 @@ bool AppInit(int argc, char* argv[])
     // Parameters
     //
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
+    RegisterAllArgs();
     gArgs.ParseParameters(argc, argv);
 
     // Process help and version before taking care about datadir

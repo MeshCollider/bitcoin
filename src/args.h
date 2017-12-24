@@ -29,6 +29,12 @@ public:
     std::string name;
     ArgValueType arg_type;
     void* destination_var;
+    /* TODO:
+     * documentation strings
+     * default value
+     * is_debug
+     * category
+     */
 };
 
 class ArgsManager
@@ -116,5 +122,12 @@ public:
 };
 
 extern ArgsManager gArgs;
+
+void RegisterMetaArguments();
+
+static inline void RegisterAllArgs()
+{
+    RegisterMetaArguments();
+}
 
 #endif // BITCOIN_ARGS_H
