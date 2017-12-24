@@ -105,7 +105,8 @@ bool AppInit(int argc, char* argv[])
         }
         try
         {
-            gArgs.ReadConfigFile(gArgs.GetArg("-conf", BITCOIN_CONF_FILENAME));
+            if (g_file_args.conf.empty()) g_file_args.conf = BITCOIN_CONF_FILENAME;
+            gArgs.ReadConfigFile(g_file_args.conf);
         } catch (const std::exception& e) {
             fprintf(stderr,"Error reading configuration file: %s\n", e.what());
             return false;
