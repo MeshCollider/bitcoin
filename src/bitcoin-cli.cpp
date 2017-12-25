@@ -68,8 +68,9 @@ static const ArgumentEntry cliArgs[] =
 };
 
 void RegisterCLIArguments() {
+    RegisterChainArguments(); // for regtest/testnet
     RegisterFileArguments();
-    RegisterChainArguments();
+    RegisterRPCArguments(); // for g_rpc_args.cookie_file
     for (unsigned int i = 0; i < ARRAYLEN(cliArgs); i++) {
         gArgs.RegisterArg(cliArgs[i].name, &cliArgs[i]);
     }
@@ -341,7 +342,7 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
     //     3. default port for chain
     int port = BaseParams().RPCPort();
     SplitHostPort(g_cli_args.rpc_connect, port, host);
-    if (!port) port = g_cli_args.rpc_port;
+    if (g_cli_args.rpc_port) port = g_cli_args.rpc_port;
 
     // Obtain event base
     raii_event_base base = obtain_event_base();
