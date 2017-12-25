@@ -33,24 +33,38 @@ struct CLIArguments {
     bool show_help;
     bool show_version;
     bool getinfo;
-    bool rpcssl;
     bool named;
+    int rpc_client_timeout;
     std::string rpc_connect;
+    std::string rpc_password;
     int rpc_port;
+    bool rpcssl;
+    std::string rpc_user;
+    bool rpc_wait;
+    std::string rpc_wallet;
+    bool use_stdin;
+    bool stdin_rpc_pass;
 } g_cli_args;
 
 static const ArgumentEntry cliArgs[] =
 { //  name            type        global variable             default value
   //  --------------  ----------- --------------------------- --------------
-    {"-help",         ARG_BOOL,    &g_cli_args.show_help,     "0"},
-    {"-?",            ARG_BOOL,    &g_cli_args.show_help,     "0"},
-    {"-h",            ARG_BOOL,    &g_cli_args.show_help,     "0"},
-    {"-version",      ARG_BOOL,    &g_cli_args.show_version,  "0"},
-    {"-getinfo",      ARG_BOOL,    &g_cli_args.getinfo,       "0"},
-    {"-rpcssl",       ARG_BOOL,    &g_cli_args.rpcssl,        "0"},
-    {"-named",        ARG_BOOL,    &g_cli_args.named,         "0"},
-    {"-rpcconnect",   ARG_STRING,  &g_cli_args.rpc_connect,   DEFAULT_RPCCONNECT},
-    {"-rpcport",      ARG_INT,     &g_cli_args.rpc_port,      ""},
+    {"-?",                ARG_BOOL,    &g_cli_args.show_help,      "0"},
+    {"-h",                ARG_BOOL,    &g_cli_args.show_help,      "0"},
+    {"-help",             ARG_BOOL,    &g_cli_args.show_help,      "0"},
+    {"-version",          ARG_BOOL,    &g_cli_args.show_version,   "0"},
+    {"-getinfo",          ARG_BOOL,    &g_cli_args.getinfo,        "0"},
+    {"-named",            ARG_BOOL,    &g_cli_args.named,          "0"},
+    {"-rpcclienttimeout", ARG_INT,     &g_cli_args.rpc_client_timeout, std::to_string(DEFAULT_HTTP_CLIENT_TIMEOUT)},
+    {"-rpcconnect",       ARG_STRING,  &g_cli_args.rpc_connect,    DEFAULT_RPCCONNECT},
+    {"-rpcpassword",      ARG_STRING,  &g_cli_args.rpc_password,   ""},
+    {"-rpcport",          ARG_INT,     &g_cli_args.rpc_port,       ""},
+    {"-rpcssl",           ARG_BOOL,    &g_cli_args.rpcssl,         "0"},
+    {"-rpcuser",          ARG_STRING,  &g_cli_args.rpc_user,       ""},
+    {"-rpcwait",          ARG_BOOL,    &g_cli_args.rpc_wait,       "0"},
+    {"-rpcwallet",        ARG_STRING,  &g_cli_args.rpc_wallet,     ""},
+    {"-stdin",            ARG_BOOL,    &g_cli_args.use_stdin,      "0"},
+    {"-stdinrpcpass",     ARG_BOOL,    &g_cli_args.stdin_rpc_pass, "0"},
 };
 
 void RegisterCLIArguments() {
@@ -335,7 +349,7 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
 
     // Synchronously look up hostname
     raii_evhttp_connection evcon = obtain_evhttp_connection_base(base.get(), host, port);
-    evhttp_connection_set_timeout(evcon.get(), gArgs.GetArg("-rpcclienttimeout", DEFAULT_HTTP_CLIENT_TIMEOUT));
+    evhttp_connection_set_timeout(evcon.get(), g_cli_args.rpc_client_timeout);
 
     HTTPReply response;
     raii_evhttp_request req = obtain_evhttp_request(http_request_done, (void*)&response);
@@ -347,7 +361,7 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
 
     // Get credentials
     std::string strRPCUserColonPass;
-    if (gArgs.GetArg("-rpcpassword", "") == "") {
+    if (g_cli_args.rpc_password == "") {
         // Try fall back to cookie-based authentication if no password is provided
         if (!GetAuthCookie(&strRPCUserColonPass)) {
             throw std::runtime_error(strprintf(
@@ -356,7 +370,7 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
 
         }
     } else {
-        strRPCUserColonPass = gArgs.GetArg("-rpcuser", "") + ":" + gArgs.GetArg("-rpcpassword", "");
+        strRPCUserColonPass = g_cli_args.rpc_user + ":" + g_cli_args.rpc_password;
     }
 
     struct evkeyvalq* output_headers = evhttp_request_get_output_headers(req.get());
@@ -373,9 +387,8 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
 
     // check if we should use a special wallet endpoint
     std::string endpoint = "/";
-    if (!gArgs.GetArgs("-rpcwallet").empty()) {
-        std::string walletName = gArgs.GetArg("-rpcwallet", "");
-        char *encodedURI = evhttp_uriencode(walletName.c_str(), walletName.size(), false);
+    if (!g_cli_args.rpc_wallet.empty()) {
+        char *encodedURI = evhttp_uriencode(g_cli_args.rpc_wallet.c_str(), g_cli_args.rpc_wallet.size(), false);
         if (encodedURI) {
             endpoint = "/wallet/"+ std::string(encodedURI);
             free(encodedURI);
@@ -423,14 +436,14 @@ int CommandLineRPC(int argc, char *argv[])
             argv++;
         }
         std::string rpcPass;
-        if (gArgs.GetBoolArg("-stdinrpcpass", false)) {
+        if (g_cli_args.stdin_rpc_pass) {
             if (!std::getline(std::cin, rpcPass)) {
                 throw std::runtime_error("-stdinrpcpass specified but failed to read from standard input");
             }
-            gArgs.ForceSetArg("-rpcpassword", rpcPass);
+            g_cli_args.rpc_password = rpcPass;
         }
         std::vector<std::string> args = std::vector<std::string>(&argv[1], &argv[argc]);
-        if (gArgs.GetBoolArg("-stdin", false)) {
+        if (g_cli_args.use_stdin) {
             // Read one arg per line from stdin and append
             std::string line;
             while (std::getline(std::cin, line)) {
@@ -452,7 +465,7 @@ int CommandLineRPC(int argc, char *argv[])
         }
 
         // Execute and handle connection failures with -rpcwait
-        const bool fWait = gArgs.GetBoolArg("-rpcwait", false);
+        const bool fWait = g_cli_args.rpc_wait;
         do {
             try {
                 const UniValue reply = CallRPC(rh.get(), method, args);
