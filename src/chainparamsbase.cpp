@@ -63,10 +63,10 @@ std::string ChainNameFromCommandLine()
 ChainArguments g_chain_args;
 
 static const ArgumentEntry chainArgs[] =
-{ //  name            type       global variable
-  //  --------------  ---------- ------------------------
-    {"-regtest",      ARG_BOOL,  &g_chain_args.regtest},
-    {"-testnet",      ARG_BOOL,  &g_chain_args.testnet},
+{ //  name            type       global variable          default value
+  //  --------------  ---------- ------------------------ --------------
+    {"-regtest",      ARG_BOOL,  &g_chain_args.regtest,   "0"},
+    {"-testnet",      ARG_BOOL,  &g_chain_args.testnet,   "0"},
 };
 
 void RegisterChainArguments() {

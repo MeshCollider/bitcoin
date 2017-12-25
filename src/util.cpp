@@ -809,10 +809,10 @@ fs::path AbsPathForConfigVal(const fs::path& path, bool net_specific)
 FileArguments g_file_args;
 
 static const ArgumentEntry fileArgs[] =
-{ //  name            type          global variable
-  //  --------------  ------------- ------------------------
-    {"-datadir",      ARG_STRING,   &g_file_args.datadir},
-    {"-conf",         ARG_STRING,   &g_file_args.conf},
+{ //  name            type          global variable         default value
+  //  --------------  ------------- ----------------------- ----------
+    {"-datadir",      ARG_STRING,   &g_file_args.datadir,   ""},
+    {"-conf",         ARG_STRING,   &g_file_args.conf,      BITCOIN_CONF_FILENAME},
 };
 
 void RegisterFileArguments() {
