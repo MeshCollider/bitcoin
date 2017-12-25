@@ -6,6 +6,7 @@
 #include <config/bitcoin-config.h>
 #endif
 
+#include <args.h>
 #include <base58.h>
 #include <clientversion.h>
 #include <coins.h>
@@ -30,6 +31,31 @@ static bool fCreateBlank;
 static std::map<std::string,UniValue> registers;
 static const int CONTINUE_EXECUTION=-1;
 
+struct TXArguments {
+    bool show_help;
+    bool create;
+    bool output_json;
+    bool output_txid;
+} g_tx_args;
+
+static const ArgumentEntry txArgs[] =
+{ //  name            type        global variable             default value
+  //  --------------  ----------- --------------------------- --------------
+    {"-?",                ARG_BOOL,    &g_tx_args.show_help,      "0"},
+    {"-h",                ARG_BOOL,    &g_tx_args.show_help,      "0"},
+    {"-help",             ARG_BOOL,    &g_tx_args.show_help,      "0"},
+    {"-create",           ARG_BOOL,    &g_tx_args.create,         "0"},
+    {"-json",             ARG_BOOL,    &g_tx_args.output_json,    "0"},
+    {"-txid",             ARG_BOOL,    &g_tx_args.output_txid,    "0"},
+};
+
+void RegisterTXArguments() {
+    RegisterChainArguments();
+    for (unsigned int i = 0; i < ARRAYLEN(txArgs); i++) {
+        gArgs.RegisterArg(txArgs[i].name, &txArgs[i]);
+    }
+}
+
 //
 // This function returns either one of EXIT_ codes when it's expected to stop the process or
 // CONTINUE_EXECUTION when it's expected to continue further.
@@ -39,7 +65,8 @@ static int AppInitRawTx(int argc, char* argv[])
     //
     // Parameters
     //
-    gArgs.ParseParameters(argc, argv);
+    RegisterTXArguments();
+    gArgs.ParseParameters(argc, argv, true);
 
     // Check for -testnet or -regtest parameter (Params() calls are only valid after this clause)
     try {
@@ -49,9 +76,9 @@ static int AppInitRawTx(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    fCreateBlank = gArgs.GetBoolArg("-create", false);
+    fCreateBlank = g_tx_args.create;
 
-    if (argc<2 || gArgs.IsArgSet("-?") || gArgs.IsArgSet("-h") || gArgs.IsArgSet("-help"))
+    if (argc<2 || g_tx_args.show_help)
     {
         // First part of help message is specific to this utility
         std::string strUsage = strprintf(_("%s bitcoin-tx utility version"), _(PACKAGE_NAME)) + " " + FormatFullVersion() + "\n\n" +
@@ -753,9 +780,9 @@ static void OutputTxHex(const CTransaction& tx)
 
 static void OutputTx(const CTransaction& tx)
 {
-    if (gArgs.GetBoolArg("-json", false))
+    if (g_tx_args.output_json)
         OutputTxJSON(tx);
-    else if (gArgs.GetBoolArg("-txid", false))
+    else if (g_tx_args.output_txid)
         OutputTxHash(tx);
     else
         OutputTxHex(tx);
