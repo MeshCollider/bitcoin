@@ -40,17 +40,17 @@ struct CLIArguments {
 } g_cli_args;
 
 static const ArgumentEntry cliArgs[] =
-{ //  name            type        global variable
-  //  --------------  ----------- ------------------------
-    {"-help",         ARG_BOOL,    &g_cli_args.show_help},
-    {"-?",            ARG_BOOL,    &g_cli_args.show_help},
-    {"-h",            ARG_BOOL,    &g_cli_args.show_help},
-    {"-version",      ARG_BOOL,    &g_cli_args.show_version},
-    {"-getinfo",      ARG_BOOL,    &g_cli_args.getinfo},
-    {"-rpcssl",       ARG_BOOL,    &g_cli_args.rpcssl},
-    {"-named",        ARG_BOOL,    &g_cli_args.named},
-    {"-rpcconnect",   ARG_STRING,  &g_cli_args.rpc_connect},
-    {"-rpcport",      ARG_INT,     &g_cli_args.rpc_port},
+{ //  name            type        global variable             default value
+  //  --------------  ----------- --------------------------- --------------
+    {"-help",         ARG_BOOL,    &g_cli_args.show_help,     "0"},
+    {"-?",            ARG_BOOL,    &g_cli_args.show_help,     "0"},
+    {"-h",            ARG_BOOL,    &g_cli_args.show_help,     "0"},
+    {"-version",      ARG_BOOL,    &g_cli_args.show_version,  "0"},
+    {"-getinfo",      ARG_BOOL,    &g_cli_args.getinfo,       "0"},
+    {"-rpcssl",       ARG_BOOL,    &g_cli_args.rpcssl,        "0"},
+    {"-named",        ARG_BOOL,    &g_cli_args.named,         "0"},
+    {"-rpcconnect",   ARG_STRING,  &g_cli_args.rpc_connect,   DEFAULT_RPCCONNECT},
+    {"-rpcport",      ARG_INT,     &g_cli_args.rpc_port,      ""},
 };
 
 void RegisterCLIArguments() {
@@ -140,7 +140,6 @@ static int AppInitRPC(int argc, char* argv[])
         return EXIT_FAILURE;
     }
     try {
-        if (g_file_args.conf.empty()) g_file_args.conf = BITCOIN_CONF_FILENAME;
         gArgs.ReadConfigFile(g_file_args.conf);
     } catch (const std::exception& e) {
         fprintf(stderr,"Error reading configuration file: %s\n", e.what());
@@ -327,9 +326,8 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
     //     2. port in -rpcconnect (ie following : in ipv4 or ]: in ipv6)
     //     3. default port for chain
     int port = BaseParams().RPCPort();
-    if (g_cli_args.rpc_connect.empty()) g_cli_args.rpc_connect = DEFAULT_RPCCONNECT;
     SplitHostPort(g_cli_args.rpc_connect, port, host);
-    port = g_cli_args.rpc_port;
+    if (!port) port = g_cli_args.rpc_port;
 
     // Obtain event base
     raii_event_base base = obtain_event_base();
@@ -353,7 +351,7 @@ static UniValue CallRPC(BaseRequestHandler *rh, const std::string& strMethod, co
         if (!GetAuthCookie(&strRPCUserColonPass)) {
             throw std::runtime_error(strprintf(
                 _("Could not locate RPC credentials. No authentication cookie could be found, and RPC password is not set.  See -rpcpassword and -stdinrpcpass.  Configuration file: (%s)"),
-                    GetConfigFile(gArgs.GetArg("-conf", BITCOIN_CONF_FILENAME)).string().c_str()));
+                    GetConfigFile(g_file_args.conf).string().c_str()));
 
         }
     } else {

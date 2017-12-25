@@ -189,4 +189,5 @@ void ArgsManager::RegisterArg(const std::string& name, const ArgumentEntry* arg_
 {
     LOCK(cs_args);
     arguments[name] = arg_entry;
+    SetArg(name, arg_entry->default_value);
 }

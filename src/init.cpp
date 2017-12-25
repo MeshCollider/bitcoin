@@ -1733,13 +1733,13 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 MetaArguments g_meta_args;
 
 static const ArgumentEntry metaArgs[] =
-{ //  name            type       global variable
-  //  --------------  ---------- ------------------------
-    {"-help-debug",   ARG_BOOL,  &g_meta_args.show_debug},
-    {"-help",         ARG_BOOL,  &g_meta_args.show_help},
-    {"-?",            ARG_BOOL,  &g_meta_args.show_help},
-    {"-h",            ARG_BOOL,  &g_meta_args.show_help},
-    {"-version",      ARG_BOOL,  &g_meta_args.show_version},
+{ //  name            type       global variable            default value
+  //  --------------  ------------- ----------------------- ----------
+    {"-help-debug",   ARG_BOOL,  &g_meta_args.show_debug,   "0"},
+    {"-help",         ARG_BOOL,  &g_meta_args.show_help,    "0"},
+    {"-?",            ARG_BOOL,  &g_meta_args.show_help,    "0"},
+    {"-h",            ARG_BOOL,  &g_meta_args.show_help,    "0"},
+    {"-version",      ARG_BOOL,  &g_meta_args.show_version, "0"},
 };
 
 void RegisterMetaArguments() {

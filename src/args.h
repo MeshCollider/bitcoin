@@ -29,9 +29,9 @@ public:
     std::string name;
     ArgValueType arg_type;
     void* destination_var;
+    std::string default_value;
     /* TODO:
      * documentation strings
-     * default value
      * is_debug
      * category
      */
