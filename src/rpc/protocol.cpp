@@ -5,6 +5,7 @@
 
 #include <rpc/protocol.h>
 
+#include <args.h>
 #include <random.h>
 #include <tinyformat.h>
 #include <util.h>
@@ -68,7 +69,7 @@ static const std::string COOKIEAUTH_FILE = ".cookie";
 /** Get name of RPC authentication cookie file */
 static fs::path GetAuthCookieFile(bool temp=false)
 {
-    std::string arg = gArgs.GetArg("-rpccookiefile", COOKIEAUTH_FILE);
+    std::string arg = g_rpc_args.cookie_file;
     if (temp) {
         arg += ".tmp";
     }
@@ -152,4 +153,18 @@ std::vector<UniValue> JSONRPCProcessBatchReply(const UniValue &in, size_t num)
         batch[id] = rec;
     }
     return batch;
+}
+
+RPCArguments g_rpc_args;
+
+static const ArgumentEntry rpcArgs[] =
+{ //  name              type          global variable            default value
+  //  ----------------- ------------- -------------------------- ----------
+    {"-rpccookiefile",  ARG_STRING,   &g_rpc_args.cookie_file,   COOKIEAUTH_FILE},
+};
+
+void RegisterRPCArguments() {
+    for (unsigned int i = 0; i < ARRAYLEN(rpcArgs); i++) {
+        gArgs.RegisterArg(rpcArgs[i].name, &rpcArgs[i]);
+    }
 }
