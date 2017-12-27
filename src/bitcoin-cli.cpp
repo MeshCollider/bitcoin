@@ -70,7 +70,6 @@ static const ArgumentEntry cliArgs[] =
 void RegisterCLIArguments() {
     RegisterChainArguments(); // for regtest/testnet
     RegisterFileArguments();
-    RegisterRPCArguments(); // for g_rpc_args.cookie_file
     for (unsigned int i = 0; i < ARRAYLEN(cliArgs); i++) {
         gArgs.RegisterArg(cliArgs[i].name, &cliArgs[i]);
     }

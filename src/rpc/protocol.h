@@ -101,8 +101,4 @@ void DeleteAuthCookie();
 /** Parse JSON-RPC batch reply into a vector */
 std::vector<UniValue> JSONRPCProcessBatchReply(const UniValue &in, size_t num);
 
-extern struct RPCArguments {
-    std::string cookie_file;
-} g_rpc_args;
-
 #endif // BITCOIN_RPCPROTOCOL_H

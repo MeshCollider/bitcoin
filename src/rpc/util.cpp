@@ -10,6 +10,8 @@
 #include <tinyformat.h>
 #include <utilstrencodings.h>
 
+#include <fs.h>
+
 // Converts a hex string to a public key if possible
 CPubKey HexToPubKey(const std::string& hex_in)
 {
@@ -126,4 +128,27 @@ public:
 UniValue DescribeAddress(const CTxDestination& dest)
 {
     return boost::apply_visitor(DescribeAddressVisitor(), dest);
+}
+
+RPCArguments g_rpc_args;
+
+static const ArgumentEntry rpcArgs[] =
+{ //  name              type             global variable             default value
+  //  ----------------- ---------------- --------------------------- ----------
+    {"-rpcauth",        ARG_STRING_VEC,  &g_rpc_args.rpcauth,        ""},
+    {"-rpcuser",        ARG_STRING,      &g_rpc_args.rpc_user,       ""},
+    {"-rpcpassword",    ARG_STRING,      &g_rpc_args.rpc_password,   ""},
+    {"-rpcallowip",     ARG_STRING_VEC,  &g_rpc_args.rpc_allow_ip,   ""},
+    {"-rpcport",        ARG_INT,         &g_rpc_args.rpc_port,       ""},
+    {"-rpcbind",        ARG_STRING_VEC,  &g_rpc_args.rpc_bind,       ""},
+    {"-rpcssl",         ARG_BOOL,        &g_rpc_args.rpcssl,         "0"},
+    {"-rpcservertimeout", ARG_INT,       &g_rpc_args.rpc_server_timeout, std::to_string(DEFAULT_HTTP_SERVER_TIMEOUT)},
+    {"-rpcworkqueue",   ARG_INT,         &g_rpc_args.rpc_work_queue,  std::to_string(DEFAULT_HTTP_WORKQUEUE)},
+    {"-rpcthreads",     ARG_INT,         &g_rpc_args.rpc_threads,     std::to_string(DEFAULT_HTTP_THREADS)},
+};
+
+void RegisterRPCArguments() {
+    for (unsigned int i = 0; i < ARRAYLEN(rpcArgs); i++) {
+        gArgs.RegisterArg(rpcArgs[i].name, &rpcArgs[i]);
+    }
 }

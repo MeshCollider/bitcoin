@@ -8,6 +8,7 @@
 #include <httpserver.h>
 #include <key_io.h>
 #include <rpc/protocol.h>
+#include <rpc/util.h>
 #include <rpc/server.h>
 #include <random.h>
 #include <sync.h>
@@ -91,7 +92,7 @@ static bool multiUserAuthorized(std::string strUserPass)
     std::string strUser = strUserPass.substr(0, strUserPass.find(':'));
     std::string strPass = strUserPass.substr(strUserPass.find(':') + 1);
 
-    for (const std::string& strRPCAuth : gArgs.GetArgs("-rpcauth")) {
+    for (const std::string& strRPCAuth : g_rpc_args.rpcauth) {
         //Search for multi-user login/pass "rpcauth" from config
         std::vector<std::string> vFields;
         boost::split(vFields, strRPCAuth, boost::is_any_of(":$"));
@@ -210,7 +211,7 @@ static bool HTTPReq_JSONRPC(HTTPRequest* req, const std::string &)
 
 static bool InitRPCAuthentication()
 {
-    if (gArgs.GetArg("-rpcpassword", "") == "")
+    if (g_rpc_args.rpc_password == "")
     {
         LogPrintf("No rpcpassword set - using random cookie authentication\n");
         if (!GenerateAuthCookie(&strRPCUserColonPass)) {
@@ -221,7 +222,7 @@ static bool InitRPCAuthentication()
         }
     } else {
         LogPrintf("Config options rpcuser and rpcpassword will soon be deprecated. Locally-run instances may remove rpcuser to use cookie-based auth, or may be replaced with rpcauth. Please see share/rpcuser for rpcauth auth generation.\n");
-        strRPCUserColonPass = gArgs.GetArg("-rpcuser", "") + ":" + gArgs.GetArg("-rpcpassword", "");
+        strRPCUserColonPass = g_rpc_args.rpc_user + ":" + g_rpc_args.rpc_password;
     }
     return true;
 }

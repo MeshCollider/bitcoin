@@ -86,6 +86,9 @@ const char * const BITCOIN_CONF_FILENAME = "bitcoin.conf";
 const char * const BITCOIN_PID_FILENAME = "bitcoind.pid";
 const char * const DEFAULT_DEBUGLOGFILE = "debug.log";
 
+/** Default name for auth cookie file */
+static const std::string COOKIEAUTH_FILE = ".cookie";
+
 bool fPrintToConsole = false;
 bool fPrintToDebugLog = true;
 
@@ -811,8 +814,9 @@ FileArguments g_file_args;
 static const ArgumentEntry fileArgs[] =
 { //  name            type          global variable         default value
   //  --------------  ------------- ----------------------- ----------
-    {"-datadir",      ARG_STRING,   &g_file_args.datadir,   ""},
-    {"-conf",         ARG_STRING,   &g_file_args.conf,      BITCOIN_CONF_FILENAME},
+    {"-datadir",       ARG_STRING,   &g_file_args.datadir,     ""},
+    {"-conf",          ARG_STRING,   &g_file_args.conf,        BITCOIN_CONF_FILENAME},
+    {"-rpccookiefile", ARG_STRING,   &g_file_args.cookie_file, COOKIEAUTH_FILE},
 };
 
 void RegisterFileArguments() {
