@@ -147,7 +147,9 @@ void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_val
         } else if (arg->arg_type == ARG_STRING) {
             *static_cast<std::string*>(arg->destination_var) = arg_value;
         } else if (arg->arg_type == ARG_STRING_VEC) {
-            static_cast<std::vector<std::string>*>(arg->destination_var)->push_back(arg_value);
+            if (!arg_value.empty()) {
+                static_cast<std::vector<std::string>*>(arg->destination_var)->push_back(arg_value);
+            }
         }
     } else if (!ignore_extra) {
         // print error because this argument is unrecognised

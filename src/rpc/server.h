@@ -8,6 +8,7 @@
 
 #include <amount.h>
 #include <rpc/protocol.h>
+#include <rpc/rpcutil.h>
 #include <uint256.h>
 
 #include <list>

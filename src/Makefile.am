@@ -131,6 +131,7 @@ BITCOIN_CORE_H = \
   rpc/client.h \
   rpc/mining.h \
   rpc/protocol.h \
+  rpc/rpcutil.h \
   rpc/safemode.h \
   rpc/server.h \
   rpc/register.h \
@@ -354,6 +355,7 @@ libbitcoin_util_a_SOURCES = \
   fs.cpp \
   random.cpp \
   rpc/protocol.cpp \
+	rpc/rpcutil.cpp \
   support/cleanse.cpp \
   sync.cpp \
   threadinterrupt.cpp \

@@ -13,6 +13,7 @@
 #include <fs.h>
 #include <rpc/client.h>
 #include <rpc/protocol.h>
+#include <rpc/rpcutil.h>
 #include <util.h>
 #include <utilstrencodings.h>
 
