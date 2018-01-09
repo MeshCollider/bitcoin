@@ -93,6 +93,7 @@ static bool multiUserAuthorized(std::string strUserPass)
     std::string strPass = strUserPass.substr(strUserPass.find(":") + 1);
 
     for (const std::string& strRPCAuth : g_rpc_args.rpcauth) {
+        LogPrintf("strRPCAuth: %s\n", strRPCAuth);
         //Search for multi-user login/pass "rpcauth" from config
         std::vector<std::string> vFields;
         boost::split(vFields, strRPCAuth, boost::is_any_of(":$"));
