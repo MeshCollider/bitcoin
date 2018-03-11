@@ -59,7 +59,7 @@ std::string GetWalletHelpString(bool showDebug)
 bool WalletParameterInteraction()
 {
     if (gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
-        for (const std::string& wallet : gArgs.GetArgs("-wallet")) {
+        for (const std::string& wallet : g_wallet_args.wallets) {
             LogPrintf("%s: parameter interaction: -disablewallet -> ignoring -wallet=%s\n", __func__, wallet);
         }
 
@@ -67,7 +67,7 @@ bool WalletParameterInteraction()
     }
 
     gArgs.SoftSetArg("-wallet", "");
-    const bool is_multiwallet = gArgs.GetArgs("-wallet").size() > 1;
+    const bool is_multiwallet = g_wallet_args.wallets.size() > 1;
 
     if (gArgs.GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY) && gArgs.SoftSetBoolArg("-walletbroadcast", false)) {
         LogPrintf("%s: parameter interaction: -blocksonly=1 -> setting -walletbroadcast=0\n", __func__);
@@ -211,8 +211,8 @@ bool VerifyWallets()
         return true;
     }
 
-    if (gArgs.IsArgSet("-walletdir")) {
-        fs::path wallet_dir = gArgs.GetArg("-walletdir", "");
+    if (g_wallet_args.walletdir != "") {
+        fs::path wallet_dir = g_wallet_args.walletdir;
         if (!fs::exists(wallet_dir)) {
             return InitError(strprintf(_("Specified -walletdir \"%s\" does not exist"), wallet_dir.string()));
         } else if (!fs::is_directory(wallet_dir)) {
@@ -229,7 +229,7 @@ bool VerifyWallets()
     // Keep track of each wallet absolute path to detect duplicates.
     std::set<fs::path> wallet_paths;
 
-    for (const std::string& walletFile : gArgs.GetArgs("-wallet")) {
+    for (const std::string& walletFile : g_wallet_args.wallets) {
         // Do some checking on wallet path. It should be either a:
         //
         // 1. Path where a directory can be created.
@@ -287,7 +287,7 @@ bool OpenWallets()
         return true;
     }
 
-    for (const std::string& walletFile : gArgs.GetArgs("-wallet")) {
+    for (const std::string& walletFile : g_wallet_args.wallets) {
         CWallet * const pwallet = CWallet::CreateWalletFromFile(walletFile, fs::absolute(walletFile, GetWalletDir()));
         if (!pwallet) {
             return false;

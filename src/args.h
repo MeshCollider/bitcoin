@@ -127,6 +127,7 @@ void RegisterMetaArguments();
 void RegisterFileArguments();
 void RegisterChainArguments();
 void RegisterRPCArguments();
+void RegisterWalletArguments();
 
 static inline void RegisterAllArgs()
 {
@@ -134,6 +135,7 @@ static inline void RegisterAllArgs()
     RegisterFileArguments();
     RegisterChainArguments();
     RegisterRPCArguments();
+    RegisterWalletArguments();
 }
 
 #endif // BITCOIN_ARGS_H
