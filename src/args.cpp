@@ -130,14 +130,16 @@ void ArgsManager::ForceSetArg(const std::string& strArg, const std::string& strV
     SetArg(strArg, strValue);
 }
 
-void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra) {
+void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra, bool already_set) {
     LOCK(cs_args);
-
-    mapArgs[arg_name] = arg_value;
 
     auto it = arguments.find(arg_name);
     if (it != arguments.end()) {
         const ArgumentEntry* arg = it->second;
+
+        // if this arg has already been set, only set it again if it can take multiple values
+        if (already_set && arg->arg_type != ARG_STRING_VEC) return;
+
         if (arg->arg_type == ARG_BOOL) {
             bool value = InterpretBool(arg_value);
             *static_cast<bool*>(arg->destination_var) = value;
@@ -148,7 +150,8 @@ void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_val
             *static_cast<std::string*>(arg->destination_var) = arg_value;
         } else if (arg->arg_type == ARG_STRING_VEC) {
             if (!arg_value.empty()) {
-                static_cast<std::vector<std::string>*>(arg->destination_var)->push_back(arg_value);
+                std::vector<std::string>* temp = static_cast<std::vector<std::string>*>(arg->destination_var);
+                temp->push_back(arg_value);
             }
         }
     } else if (!ignore_extra) {
@@ -175,8 +178,9 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
             std::string strKey = std::string("-") + it->string_key;
             std::string strValue = it->value[0];
             InterpretNegativeSetting(strKey, strValue);
-            if (mapArgs.count(strKey) == 0)
-                SetArg(strKey, strValue);
+            bool already_set = (mapArgs.count(strKey) != 0);
+            if (!already_set) mapArgs[strKey] = strValue;
+            SetArg(strKey, strValue, false, already_set);
             mapMultiArgs[strKey].push_back(strValue);
         }
     }
