@@ -12,6 +12,7 @@
 #include <chainparams.h>
 #include <clientversion.h>
 #include <consensus/consensus.h>
+#include <consensus/validation.h>
 #include <crypto/common.h>
 #include <crypto/sha256.h>
 #include <primitives/transaction.h>
@@ -19,6 +20,7 @@
 #include <scheduler.h>
 #include <ui_interface.h>
 #include <utilstrencodings.h>
+#include <validation.h>
 
 #ifdef WIN32
 #include <string.h>
@@ -95,7 +97,7 @@ void CConnman::AddOneShot(const std::string& strDest)
 
 unsigned short GetListenPort()
 {
-    return (unsigned short)(gArgs.GetArg("-port", Params().GetDefaultPort()));
+    return (g_net_args.port == 0) ? Params().GetDefaultPort() : g_net_args.port;
 }
 
 // find 'best' local address for a particular peer
@@ -181,7 +183,7 @@ void AdvertiseLocal(CNode *pnode)
     if (fListen && pnode->fSuccessfullyConnected)
     {
         CAddress addrLocal = GetLocalAddress(&pnode->addr, pnode->GetLocalServices());
-        if (gArgs.GetBoolArg("-addrmantest", false)) {
+        if (g_net_args.addrmantest) {
             // use IPv4 loopback during addrmantest
             addrLocal = CAddress(CService(LookupNumeric("127.0.0.1", GetListenPort())), pnode->GetLocalServices());
         }
@@ -193,7 +195,7 @@ void AdvertiseLocal(CNode *pnode)
         {
             addrLocal.SetIP(pnode->GetAddrLocal());
         }
-        if (addrLocal.IsRoutable() || gArgs.GetBoolArg("-addrmantest", false))
+        if (addrLocal.IsRoutable() || g_net_args.addrmantest)
         {
             LogPrint(BCLog::NET, "AdvertiseLocal: advertising address %s\n", addrLocal.ToString());
             FastRandomContext insecure_rand;
@@ -544,7 +546,7 @@ void CConnman::Ban(const CSubNet& subNet, const BanReason &banReason, int64_t ba
     banEntry.banReason = banReason;
     if (bantimeoffset <= 0)
     {
-        bantimeoffset = gArgs.GetArg("-bantime", DEFAULT_MISBEHAVING_BANTIME);
+        bantimeoffset = g_net_args.bantime;
         sinceUnixEpoch = false;
     }
     banEntry.nBanUntil = (sinceUnixEpoch ? 0 : GetTime() )+bantimeoffset;
@@ -1596,7 +1598,7 @@ void CConnman::ThreadDNSAddressSeed()
     //  creating fewer identifying DNS requests, reduces trust by giving seeds
     //  less influence on the network topology, and reduces traffic to the seeds.
     if ((addrman.size() > 0) &&
-        (!gArgs.GetBoolArg("-forcednsseed", DEFAULT_FORCEDNSSEED))) {
+        (!g_net_args.forcednsseed)) {
         if (!interruptNet.sleep_for(std::chrono::seconds(11)))
             return;
 
@@ -2355,7 +2357,7 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
     // Send and receive from sockets, accept connections
     threadSocketHandler = std::thread(&TraceThread<std::function<void()> >, "net", std::function<void()>(std::bind(&CConnman::ThreadSocketHandler, this)));
 
-    if (!gArgs.GetBoolArg("-dnsseed", true))
+    if (!g_net_args.dnsseed)
         LogPrintf("DNS seeding disabled\n");
     else
         threadDNSAddressSeed = std::thread(&TraceThread<std::function<void()> >, "dnsseed", std::function<void()>(std::bind(&CConnman::ThreadDNSAddressSeed, this)));
@@ -2882,4 +2884,23 @@ uint64_t CConnman::CalculateKeyedNetGroup(const CAddress& ad) const
     std::vector<unsigned char> vchNetGroup(ad.GetGroup());
 
     return GetDeterministicRandomizer(RANDOMIZER_ID_NETGROUP).Write(vchNetGroup.data(), vchNetGroup.size()).Finalize();
+}
+
+NetArguments g_net_args;
+
+static const ArgumentEntry netArgs[] =
+{ //  name            type          global variable         default value
+  //  --------------  ------------- ----------------------- ----------
+    {"-addrmantest",   ARG_BOOL,   &g_net_args.addrmantest,     "0"},
+    {"-port",          ARG_INT,    &g_net_args.port,            "0"},
+    {"-bantime",       ARG_INT,    &g_net_args.bantime,         std::to_string(DEFAULT_MISBEHAVING_BANTIME)},
+    {"-forcednsseed",  ARG_BOOL,   &g_net_args.forcednsseed,    std::to_string(DEFAULT_FORCEDNSSEED)},
+    {"-dnsseed",       ARG_BOOL,   &g_net_args.dnsseed,         "1"},
+    {"-banscore",      ARG_INT,    &g_net_args.banscore,        std::to_string(DEFAULT_BANSCORE_THRESHOLD)},
+};
+
+void RegisterNetArguments() {
+    for (unsigned int i = 0; i < ARRAYLEN(netArgs); i++) {
+        gArgs.RegisterArg(netArgs[i].name, &netArgs[i]);
+    }
 }

@@ -6,6 +6,7 @@
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
+#include <args.h>
 #include <addrdb.h>
 #include <addrman.h>
 #include <amount.h>
@@ -857,5 +858,14 @@ public:
 
 /** Return a timestamp in the future (in microseconds) for exponentially distributed events. */
 int64_t PoissonNextSend(int64_t nNow, int average_interval_seconds);
+
+extern struct NetArguments {
+    int port;
+    bool addrmantest;
+    int bantime;
+    bool forcednsseed;
+    bool dnsseed;
+    int banscore;
+} g_net_args;
 
 #endif // BITCOIN_NET_H

@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(cnode_listen_port)
     BOOST_CHECK(port == Params().GetDefaultPort());
     // test set port
     unsigned short altPort = 12345;
-    gArgs.SoftSetArg("-port", std::to_string(altPort));
+    g_net_args.port = altPort;
     port = GetListenPort();
     BOOST_CHECK(port == altPort);
 }
