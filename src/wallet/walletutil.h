@@ -17,6 +17,7 @@ fs::path GetWalletDir();
 extern struct WalletArguments {
     std::vector<std::string> wallets;
     std::string walletdir;
+    int zapwallettxes;
 } g_wallet_args;
 
 #endif // BITCOIN_WALLET_UTIL_H

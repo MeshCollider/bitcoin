@@ -29,6 +29,7 @@
 #include <util.h>
 #include <utilmoneystr.h>
 #include <wallet/fees.h>
+#include <wallet/walletutil.h>
 
 #include <assert.h>
 #include <future>
@@ -3912,7 +3913,7 @@ CWallet* CWallet::CreateWalletFromFile(const std::string& name, const fs::path& 
     // needed to restore wallet transaction meta data after -zapwallettxes
     std::vector<CWalletTx> vWtx;
 
-    if (gArgs.GetBoolArg("-zapwallettxes", false)) {
+    if (g_wallet_args.zapwallettxes > 0) {
         uiInterface.InitMessage(_("Zapping all transactions from wallet..."));
 
         std::unique_ptr<CWallet> tempWallet = MakeUnique<CWallet>(name, CWalletDBWrapper::Create(path));
@@ -4068,7 +4069,7 @@ CWallet* CWallet::CreateWalletFromFile(const std::string& name, const fs::path& 
         walletInstance->dbw->IncrementUpdateCounter();
 
         // Restore wallet transaction metadata after -zapwallettxes=1
-        if (gArgs.GetBoolArg("-zapwallettxes", false) && gArgs.GetArg("-zapwallettxes", "1") != "2")
+        if (g_wallet_args.zapwallettxes == 1)
         {
             CWalletDB walletdb(*walletInstance->dbw);
 

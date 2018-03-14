@@ -32,8 +32,9 @@ WalletArguments g_wallet_args;
 static const ArgumentEntry walletArgs[] =
 { //  name            type          global variable         default value
   //  --------------  ------------- ----------------------- ----------
-    {"-wallet",       ARG_STRING_VEC,   &g_wallet_args.wallets,     ""},
-    {"-walletdir",    ARG_STRING,       &g_wallet_args.walletdir,   ""},
+    {"-wallet",        ARG_STRING_VEC,   &g_wallet_args.wallets,       ""},
+    {"-walletdir",     ARG_STRING,       &g_wallet_args.walletdir,     ""},
+    {"-zapwallettxes", ARG_INT,          &g_wallet_args.zapwallettxes, "0"},
 };
 
 void RegisterWalletArguments() {
