@@ -64,6 +64,7 @@ void ArgsManager::ParseParameters(int argc, const char* const argv[], bool ignor
 
         mapArgs[str] = strValue;
         mapMultiArgs[str].push_back(strValue);
+        is_arg_set[str] = true;
 
         SetArg(str, strValue, ignore_extra);
     }
@@ -80,7 +81,9 @@ std::vector<std::string> ArgsManager::GetArgs(const std::string& strArg) const
 bool ArgsManager::IsArgSet(const std::string& strArg) const
 {
     LOCK(cs_args);
-    return mapArgs.count(strArg);
+    auto it = is_arg_set.find(strArg);
+    if (it != is_arg_set.end()) return it->second;
+    return false;
 }
 
 std::string ArgsManager::GetArg(const std::string& strArg, const std::string& strDefault) const
@@ -128,10 +131,11 @@ void ArgsManager::ForceSetArg(const std::string& strArg, const std::string& strV
     LOCK(cs_args);
     mapArgs[strArg] = strValue;
     mapMultiArgs[strArg] = {strValue};
-    SetArg(strArg, strValue, false, false, false);
+    SetArg(strArg, strValue, false, true);
+    is_arg_set[strArg] = true;
 }
 
-void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra, bool already_set, bool ignore_empty) {
+void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra, bool force_set) {
     LOCK(cs_args);
 
     auto it = arguments.find(arg_name);
@@ -139,7 +143,7 @@ void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_val
         const ArgumentEntry* arg = it->second;
 
         // if this arg has already been set, only set it again if it can take multiple values
-        if (already_set && arg->arg_type != ARG_STRING_VEC) return;
+        if (!force_set && is_arg_set[arg_name] && arg->arg_type != ARG_STRING_VEC) return;
 
         if (arg->arg_type == ARG_BOOL) {
             bool value = InterpretBool(arg_value);
@@ -150,8 +154,8 @@ void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_val
         } else if (arg->arg_type == ARG_STRING) {
             *static_cast<std::string*>(arg->destination_var) = arg_value;
         } else if (arg->arg_type == ARG_STRING_VEC) {
-            if (!ignore_empty || !arg_value.empty()) {
-                std::vector<std::string>* temp = static_cast<std::vector<std::string>*>(arg->destination_var);
+            std::vector<std::string>* temp = static_cast<std::vector<std::string>*>(arg->destination_var);
+            if (!arg_value.empty() || (force_set && temp->empty())) {
                 temp->push_back(arg_value);
             }
         }
@@ -179,10 +183,10 @@ void ArgsManager::ReadConfigFile(const std::string& confPath)
             std::string strKey = std::string("-") + it->string_key;
             std::string strValue = it->value[0];
             InterpretNegativeSetting(strKey, strValue);
-            bool already_set = (mapArgs.count(strKey) != 0);
-            if (!already_set) mapArgs[strKey] = strValue;
-            SetArg(strKey, strValue, false, already_set);
+            if (!is_arg_set[strKey]) mapArgs[strKey] = strValue;
+            SetArg(strKey, strValue, false, false);
             mapMultiArgs[strKey].push_back(strValue);
+            is_arg_set[strKey] = true;
         }
     }
     // If datadir is changed in .conf file:
@@ -196,5 +200,6 @@ void ArgsManager::RegisterArg(const std::string& name, const ArgumentEntry* arg_
 {
     LOCK(cs_args);
     arguments[name] = arg_entry;
+    is_arg_set[name] = false;
     SetArg(name, arg_entry->default_value);
 }
