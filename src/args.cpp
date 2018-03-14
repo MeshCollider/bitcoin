@@ -126,11 +126,12 @@ bool ArgsManager::SoftSetBoolArg(const std::string& strArg, bool fValue)
 void ArgsManager::ForceSetArg(const std::string& strArg, const std::string& strValue)
 {
     LOCK(cs_args);
+    mapArgs[strArg] = strValue;
     mapMultiArgs[strArg] = {strValue};
-    SetArg(strArg, strValue);
+    SetArg(strArg, strValue, false, false, false);
 }
 
-void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra, bool already_set) {
+void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_value, bool ignore_extra, bool already_set, bool ignore_empty) {
     LOCK(cs_args);
 
     auto it = arguments.find(arg_name);
@@ -149,7 +150,7 @@ void ArgsManager::SetArg(const std::string& arg_name, const std::string& arg_val
         } else if (arg->arg_type == ARG_STRING) {
             *static_cast<std::string*>(arg->destination_var) = arg_value;
         } else if (arg->arg_type == ARG_STRING_VEC) {
-            if (!arg_value.empty()) {
+            if (!ignore_empty || !arg_value.empty()) {
                 std::vector<std::string>* temp = static_cast<std::vector<std::string>*>(arg->destination_var);
                 temp->push_back(arg_value);
             }
