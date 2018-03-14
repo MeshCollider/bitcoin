@@ -1232,12 +1232,12 @@ bool AppInitMain()
     LogPrintf("Using at most %i automatic connections (%i file descriptors available)\n", nMaxConnections, nFD);
 
     // Warn about relative -datadir path.
-    if (gArgs.IsArgSet("-datadir") && !fs::path(gArgs.GetArg("-datadir", "")).is_absolute()) {
+    if (!g_file_args.datadir.empty() && !fs::path(g_file_args.datadir).is_absolute()) {
         LogPrintf("Warning: relative datadir option '%s' specified, which will be interpreted relative to the "
                   "current working directory '%s'. This is fragile, because if bitcoin is started in the future "
                   "from a different location, it will be unable to locate the current data files. There could "
                   "also be data loss if bitcoin is started while in a temporary directory.\n",
-            gArgs.GetArg("-datadir", ""), fs::current_path().string());
+            g_file_args.datadir, fs::current_path().string());
     }
 
     InitSignatureCache();
