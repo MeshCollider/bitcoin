@@ -223,8 +223,6 @@ static void ImportScript(CWallet* const pwallet, const CScript& script, const st
         throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script");
     }
 
-    pwallet->MarkDirty();
-
     if (!pwallet->HaveWatchOnly(script) && !pwallet->AddWatchOnly(script, 0 /* nCreateTime */)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
     }
@@ -308,6 +306,9 @@ UniValue importaddress(const JSONRPCRequest& request)
 
     {
         LOCK2(cs_main, pwallet->cs_wallet);
+
+        // Make sure balances of all wallet transactions are recalculated.
+        pwallet->MarkDirty();
 
         CTxDestination dest = DecodeDestination(request.params[0].get_str());
         if (IsValidDestination(dest)) {
@@ -487,6 +488,9 @@ UniValue importpubkey(const JSONRPCRequest& request)
     {
         LOCK2(cs_main, pwallet->cs_wallet);
 
+        // Make sure balances of all wallet transactions are recalculated.
+        pwallet->MarkDirty();
+
         for (const auto& dest : GetAllDestinationsForKey(pubKey)) {
             ImportAddress(pwallet, dest, strLabel);
         }
@@ -540,6 +544,8 @@ UniValue importwallet(const JSONRPCRequest& request)
         LOCK2(cs_main, pwallet->cs_wallet);
 
         EnsureWalletIsUnlocked(pwallet);
+
+        pwallet->MarkDirty();
 
         std::ifstream file;
         file.open(request.params[0].get_str().c_str(), std::ios::in | std::ios::ate);
@@ -624,7 +630,6 @@ UniValue importwallet(const JSONRPCRequest& request)
     }
     uiInterface.ShowProgress("", 100, false); // hide progress dialog in GUI
     RescanWallet(*pwallet, reserver, nTimeBegin, false /* update */);
-    pwallet->MarkDirty();
 
     if (!fGood)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error adding some keys/scripts to wallet");
@@ -875,7 +880,6 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
             }
 
             // Import into the wallet
-            pwallet->MarkDirty();
             if (!pwallet->AddWatchOnly(redeemScript, timestamp)) {
                 throw JSONRPCError(RPC_WALLET_ERROR, "Error adding redeemScript to wallet");
             }
@@ -900,7 +904,6 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
                 }
     
                 // Import into the wallet
-                pwallet->MarkDirty();
                 if (!pwallet->AddWatchOnly(witnessScript, timestamp)) {
                     throw JSONRPCError(RPC_WALLET_ERROR, "Error adding witnessScript to wallet");
                 }
@@ -926,7 +929,6 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
             }
 
             // Import into the wallet
-            pwallet->MarkDirty();
             if (!pwallet->AddWatchOnly(witnessScript, timestamp)) {
                 throw JSONRPCError(RPC_WALLET_ERROR, "Error adding witnessScript to wallet");
             }
@@ -939,7 +941,6 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
         if (::IsMine(*pwallet, script) == ISMINE_SPENDABLE) {
             throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script");
         }
-        pwallet->MarkDirty();
         if (!pwallet->AddWatchOnly(script, timestamp)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
         }
@@ -965,8 +966,6 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
             if (::IsMine(*pwallet, scriptRawPubKey) == ISMINE_SPENDABLE) {
                 throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this public key");
             }
-
-            pwallet->MarkDirty();
             if (!pwallet->AddWatchOnly(scriptRawPubKey, timestamp)) {
                 throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
             }
@@ -986,7 +985,6 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
             assert(key.VerifyPubKey(pubkey));
     
             CKeyID vchAddress = pubkey.GetID();
-            pwallet->MarkDirty();
     
             if (pwallet->HaveKey(vchAddress)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Already have this key");
@@ -1113,6 +1111,9 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
     {
         LOCK2(cs_main, pwallet->cs_wallet);
         EnsureWalletIsUnlocked(pwallet);
+
+        // Make sure balances of all wallet transactions are recalculated.
+        pwallet->MarkDirty();
 
         // Verify all timestamps are present before importing any keys.
         now = chainActive.Tip() ? chainActive.Tip()->GetMedianTimePast() : 0;
