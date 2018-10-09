@@ -4,6 +4,7 @@
 
 #include <chain.h>
 #include <key_io.h>
+#include <keystore.h>
 #include <rpc/server.h>
 #include <validation.h>
 #include <script/script.h>
@@ -830,7 +831,7 @@ public:
 bool UsageTrackingKeystore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 {
     LOCK(cs_KeyStore);
-    mapKeysUsed[key] = false;
+    mapKeysUsed[key.GetID()] = false;
     return CBasicKeyStore::AddKeyPubKey(key, pubkey);
 }
 bool UsageTrackingKeystore::GetKey(const CKeyID &address, CKey &keyOut)
@@ -844,7 +845,7 @@ bool UsageTrackingKeystore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyO
     if (CBasicKeyStore::GetPubKey(address, vchPubKeyOut)) {
         LOCK(cs_KeyStore);
         mapKeysUsed[address] = true;
-        mapWatchKeysUsed[vchPubKeyOut.getID()] = true;
+        mapWatchKeysUsed[vchPubKeyOut.GetID()] = true;
         return true;
     }
     return false;
@@ -859,7 +860,7 @@ bool UsageTrackingKeystore::GetCScript(const CScriptID &hash, CScript& redeemScr
 {
     LOCK(cs_KeyStore);
     mapScriptsUsed[hash] = true;
-    return CBasicKeyStore::GetCScript(hash, redeemScriptOut)
+    return CBasicKeyStore::GetCScript(hash, redeemScriptOut);
 }
 bool UsageTrackingKeystore::AddWatchOnly(const CScript &dest)
 {
