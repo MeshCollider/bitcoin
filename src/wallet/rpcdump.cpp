@@ -1206,7 +1206,7 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
 
             UniValue result = UniValue(UniValue::VOBJ);
             try {
-                UsageTrackingKeystore dummy_wallet;
+                UsageTrackingKeystore* const dummy_wallet;
                 CScript script = ProcessImport(dummy_wallet, data, timestamp);
                 IsSolvable(dummy_wallet, script);
                 if (!dummy_wallet.AllUsed())  throw JSONRPCError(RPC_INVALID_PARAMETER, "Unused information provided to importmulti");
