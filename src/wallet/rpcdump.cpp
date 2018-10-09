@@ -816,7 +816,7 @@ class UsageTrackingKeystore : public CBasicKeyStore
 protected:
   std::map<CKeyID, bool> mapKeysUsed GUARDED_BY(cs_KeyStore);
   std::map<CKeyID, bool> mapWatchKeysUsed GUARDED_BY(cs_KeyStore);
-  std::map<CScriptID, bool>; mapScriptsUsed GUARDED_BY(cs_KeyStore);
+  std::map<CScriptID, bool> mapScriptsUsed GUARDED_BY(cs_KeyStore);
 
 public:
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey);
@@ -866,7 +866,7 @@ bool UsageTrackingKeystore::AddWatchOnly(const CScript &dest)
     LOCK(cs_KeyStore);
     CPubKey pubKey;
     if (ExtractPubKey(dest, pubKey)) {
-        mapWatchKeysUsed[pubKey.getID()] = false;
+        mapWatchKeysUsed[pubKey.GetID()] = false;
     }
     return CBasicKeyStore::AddWatchOnly(dest);
 }
