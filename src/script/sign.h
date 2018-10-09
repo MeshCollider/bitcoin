@@ -67,18 +67,6 @@ struct FlatSigningProvider final : public SigningProvider
 
 FlatSigningProvider Merge(const FlatSigningProvider& a, const FlatSigningProvider& b);
 
-struct UsageTrackingSigningProvider final : public SigningProvider
-{
-    std::map<CScriptID, std::pair<CScript, bool> > scripts;
-    std::map<CKeyID, std::pair<CPubKey, bool> > pubkeys;
-    std::map<CKeyID, std::pair<CKey, bool> > keys;
-
-    bool GetCScript(const CScriptID& scriptid, CScript& script) const override;
-    bool GetPubKey(const CKeyID& keyid, CPubKey& pubkey) const override;
-    bool GetKey(const CKeyID& keyid, CKey& key) const override;
-    bool AllUsed() const;
-};
-
 /** Interface for signature creators. */
 class BaseSignatureCreator {
 public:

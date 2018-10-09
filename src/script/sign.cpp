@@ -696,32 +696,3 @@ FlatSigningProvider Merge(const FlatSigningProvider& a, const FlatSigningProvide
     ret.keys.insert(b.keys.begin(), b.keys.end());
     return ret;
 }
-
-template<typename M, typename K, typename V>
-bool UsageTrackingLookupHelper(M& map, const K& key, V& value)
-{
-    auto it = map.find(key);
-    if (it != map.end()) {
-        value = it->second.first;
-        it->second.second = true;
-        return true;
-    }
-    return false;
-}
-
-bool UsageTrackingSigningProvider::GetCScript(const CScriptID& scriptid, CScript& script) const { return UsageTrackingLookupHelper(scripts, scriptid, script); }
-bool UsageTrackingSigningProvider::GetPubKey(const CKeyID& keyid, CPubKey& pubkey) const { return UsageTrackingLookupHelper(pubkeys, keyid, pubkey); }
-bool UsageTrackingSigningProvider::GetKey(const CKeyID& keyid, CKey& key) const { return UsageTrackingLookupHelper(keys, keyid, key); }
-bool UsageTrackingSigningProvider::AllUsed() const
-{
-    for (auto const& x : scripts)
-        if (!x.second.second)
-          return false;
-    for (auto const& x : pubkeys)
-        if (!x.second.second)
-          return false;
-    for (auto const& x : keys)
-        if (!x.second.second)
-          return false;
-    return true;
-}

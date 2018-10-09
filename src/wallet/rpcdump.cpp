@@ -811,6 +811,79 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     return reply;
 }
 
+class UsageTrackingKeystore : public CBasicKeyStore
+{
+protected:
+    using KeyUsedMap = std::map<CKeyID, bool>;
+    using WatchKeyUsedMap = std::map<CKeyID, bool>;
+    using ScriptUsedMap = std::map<CScriptID, bool>;
+
+public:
+    bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;
+    bool GetKey(const CKeyID &address, CKey& keyOut) override;
+    bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) override;
+    bool AddCScript(const CScript& redeemScript) override;
+    bool GetCScript(const CScriptID &hash, CScript& redeemScriptOut) override;
+    bool CBasicKeyStore::AddWatchOnly(const CScript &dest) override;
+    bool AllUsed() const;
+};
+bool CBasicKeyStore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
+{
+    LOCK(cs_KeyStore);
+    KeyUsedMap[key] = false;
+    return CBasicKeyStore::AddKeyPubKey(key, pubkey);
+}
+bool UsageTrackingKeystore::GetKey(const CKeyID &address, CKey &keyOut)
+{
+    LOCK(cs_KeyStore);
+    KeyUsedMap[address] = true;
+    return CBasicKeyStore::GetKey(address, keyOut);
+}
+bool CBasicKeyStore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut)
+{
+    if (CBasicKeyStore::GetPubKey(address, vchPubKeyOut)) {
+        LOCK(cs_KeyStore);
+        KeyUsedMap[address] = true;
+        WatchKeyUsedMap[vchPubKeyOut.getID()] = true;
+        return true;
+    }
+    return false;
+}
+bool CBasicKeyStore::AddCScript(const CScript& redeemScript)
+{
+    LOCK(cs_KeyStore);
+    ScriptUsedMap[CScriptID(redeemScript)] = false;
+    return CBasicKeyStore::AddCScript(redeemScript);
+}
+bool UsageTrackingKeystore::GetCScript(const CScriptID &hash, CScript& redeemScriptOut)
+{
+    LOCK(cs_KeyStore);
+    ScriptUsedMap[hash] = true;
+    return CBasicKeyStore::GetCScript(hash, redeemScriptOut)
+}
+bool UsageTrackingKeystore::AddWatchOnly(const CScript &dest)
+{
+    LOCK(cs_KeyStore);
+    CPubKey pubKey;
+    if (ExtractPubKey(dest, pubKey)) {
+        WatchKeyUsedMap[pubKey.getID()] = false;
+    }
+    return CBasicKeyStore::AddWatchOnly(dest);
+}
+bool UsageTrackingKeystore::AllUsed() const {
+    LOCK(cs_KeyStore);
+    for (auto const& x : WatchKeyUsedMap)
+        if (!x.second)
+          return false;
+    for (auto const& x : ScriptUsedMap)
+        if (!x.second)
+          return false;
+    for (auto const& x : KeyUsedMap)
+        if (!x.second)
+          return false;
+    return true;
+}
+
 static void AddWatchOnlyHelper (CBasicKeyStore * const pwallet, const CScript& script, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet) {
     // If this is a wallet rather than a dummy, add the timestamp to the metadata
     if (CWallet* v = dynamic_cast<CWallet*>(pwallet)) {
@@ -820,7 +893,7 @@ static void AddWatchOnlyHelper (CBasicKeyStore * const pwallet, const CScript& s
     }
 }
 
-static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+static CScript ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     // First ensure scriptPubKey has either a script or JSON with "address" string
     const UniValue& scriptPubKey = data["scriptPubKey"];
@@ -966,25 +1039,25 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
         }
         AddWatchOnlyHelper(pwallet, scriptRawPubKey, timestamp);
     }
-    
+
     // Import private keys.
     for (size_t i = 0; i < keys.size(); i++) {
         const std::string& privkey = keys[i].get_str();
         CKey key = DecodeSecret(privkey);
-    
+
         if (!key.IsValid()) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key encoding");
         }
-    
+
         CPubKey pubkey = key.GetPubKey();
         assert(key.VerifyPubKey(pubkey));
-    
+
         CKeyID vchAddress = pubkey.GetID();
-    
+
         if (pwallet->HaveKey(vchAddress)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Already have this key");
         }
-    
+
         if (!pwallet->AddKeyPubKey(key, pubkey)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding key to wallet");
         }
@@ -992,8 +1065,10 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
         // If this is a wallet rather than a dummy, add the timestamp to the metadata
         if (CWallet* v = dynamic_cast<CWallet*>(pwallet)) {
             v->mapKeyMetadata[vchAddress].nCreateTime = timestamp;
+            v->UpdateTimeFirstKey(timestamp);
         }
     }
+    return script;
 }
 
 static void AddImportLabel(CWallet * const pwallet, const UniValue& data) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
@@ -1130,12 +1205,11 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
 
             UniValue result = UniValue(UniValue::VOBJ);
             try {
-                // TODO: create a new dummy wallet which counts Usage
-                // TODO: run ProcessImport with the dummy wallet
-                // TODO: run IsSolvable on the address
-                // TODO: check all were used
+                UsageTrackingKeystore dummy_wallet;
+                CScript script = ProcessImport(dummy_wallet, data, timestamp);
+                IsSolvable(dummy_wallet, script);
+                if (!dummy_wallet.AllUsed())  throw JSONRPCError(RPC_INVALID_PARAMETER, "Unused information provided to importmulti");
                 ProcessImport(pwallet, data, timestamp);
-                    pwallet->UpdateTimeFirstKey(timestamp);
                 AddImportLabel(pwallet, data);
                 result.pushKV("success", UniValue(true));
             } catch (const UniValue& e) {
