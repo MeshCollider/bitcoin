@@ -827,7 +827,7 @@ public:
     bool CBasicKeyStore::AddWatchOnly(const CScript &dest) override;
     bool AllUsed() const;
 };
-bool CBasicKeyStore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
+bool UsageTrackingKeystore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 {
     LOCK(cs_KeyStore);
     KeyUsedMap[key] = false;
@@ -839,7 +839,7 @@ bool UsageTrackingKeystore::GetKey(const CKeyID &address, CKey &keyOut)
     KeyUsedMap[address] = true;
     return CBasicKeyStore::GetKey(address, keyOut);
 }
-bool CBasicKeyStore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut)
+bool UsageTrackingKeystore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut)
 {
     if (CBasicKeyStore::GetPubKey(address, vchPubKeyOut)) {
         LOCK(cs_KeyStore);
@@ -849,7 +849,7 @@ bool CBasicKeyStore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut)
     }
     return false;
 }
-bool CBasicKeyStore::AddCScript(const CScript& redeemScript)
+bool UsageTrackingKeystore::AddCScript(const CScript& redeemScript)
 {
     LOCK(cs_KeyStore);
     ScriptUsedMap[CScriptID(redeemScript)] = false;
