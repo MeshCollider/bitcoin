@@ -811,6 +811,15 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     return reply;
 }
 
+static void AddWatchOnlyHelper (CBasicKeyStore * const pwallet, const CScript& script, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet) {
+    // If this is a wallet rather than a dummy, add the timestamp to the metadata
+    if (CWallet* v = dynamic_cast<CWallet*>(pwallet)) {
+        if (!v->AddWatchOnly(script, timestamp)) throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
+    } else {
+        if (!pwallet->AddWatchOnly(script)) throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
+    }
+}
+
 static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     // First ensure scriptPubKey has either a script or JSON with "address" string
@@ -877,9 +886,7 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
         }
 
         // Import into the wallet
-        if (!pwallet->AddWatchOnly(redeemScript, timestamp)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Error adding redeemScript to wallet");
-        }
+        AddWatchOnlyHelper(pwallet, redeemScript, timestamp);
         if (!pwallet->HaveCScript(redeem_id) && !pwallet->AddCScript(redeemScript)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding p2sh redeemScript to wallet");
         }
@@ -901,9 +908,7 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
             }
 
             // Import into the wallet
-            if (!pwallet->AddWatchOnly(witnessScript, timestamp)) {
-                throw JSONRPCError(RPC_WALLET_ERROR, "Error adding witnessScript to wallet");
-            }
+            AddWatchOnlyHelper(pwallet, witnessScript, timestamp);
             if (!pwallet->HaveCScript(witness_id) && !pwallet->AddCScript(witnessScript)) {
                 throw JSONRPCError(RPC_WALLET_ERROR, "Error adding p2sh-p2wsh witnessScript to wallet");
             }
@@ -926,9 +931,7 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
         }
 
         // Import into the wallet
-        if (!pwallet->AddWatchOnly(witnessScript, timestamp)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Error adding witnessScript to wallet");
-        }
+        AddWatchOnlyHelper(pwallet, witnessScript, timestamp);
         if (!pwallet->HaveCScript(witness_id) && !pwallet->AddCScript(witnessScript)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding p2wsh witnessScript to wallet");
         }
@@ -938,9 +941,7 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
     if (::IsMine(*pwallet, script) == ISMINE_SPENDABLE) {
         throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script");
     }
-    if (!pwallet->AddWatchOnly(script, timestamp)) {
-        throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
-    }
+    AddWatchOnlyHelper(pwallet, script, timestamp);
 
     // Import public keys.
     for (size_t i = 0; i < pubKeys.size(); i++) {
@@ -963,9 +964,7 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
         if (::IsMine(*pwallet, scriptRawPubKey) == ISMINE_SPENDABLE) {
             throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this public key");
         }
-        if (!pwallet->AddWatchOnly(scriptRawPubKey, timestamp)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
-        }
+        AddWatchOnlyHelper(pwallet, scriptRawPubKey, timestamp);
     }
     
     // Import private keys.
@@ -992,7 +991,7 @@ static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, 
 
         // If this is a wallet rather than a dummy, add the timestamp to the metadata
         if (CWallet* v = dynamic_cast<CWallet*>(pwallet)) {
-           v->mapKeyMetadata[vchAddress].nCreateTime = timestamp;
+            v->mapKeyMetadata[vchAddress].nCreateTime = timestamp;
         }
     }
 }
