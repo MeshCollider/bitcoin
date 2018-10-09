@@ -831,7 +831,7 @@ public:
 bool UsageTrackingKeystore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 {
     LOCK(cs_KeyStore);
-    mapKeysUsed[key.GetID()] = false;
+    mapKeysUsed[key.GetPubKey().GetID()] = false;
     return CBasicKeyStore::AddKeyPubKey(key, pubkey);
 }
 bool UsageTrackingKeystore::GetKey(const CKeyID &address, CKey &keyOut)
