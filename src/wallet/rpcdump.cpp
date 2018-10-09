@@ -811,8 +811,7 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     return reply;
 }
 
-
-static void ProcessImport(CWallet * const pwallet, const UniValue& data, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+static void ProcessImport(CBasicKeyStore * const pwallet, const UniValue& data, const int64_t timestamp) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     // First ensure scriptPubKey has either a script or JSON with "address" string
     const UniValue& scriptPubKey = data["scriptPubKey"];
@@ -829,7 +828,6 @@ static void ProcessImport(CWallet * const pwallet, const UniValue& data, const i
     const UniValue& keys = data.exists("keys") ? data["keys"].get_array() : UniValue();
     const bool internal = data.exists("internal") ? data["internal"].get_bool() : false;
     const bool watchOnly = data.exists("watchonly") ? data["watchonly"].get_bool() : false;
-    const std::string& label = data.exists("label") && !internal ? data["label"].get_str() : "";
 
     // Generate the script and destination for the scriptPubKey provided
     CScript script;
@@ -969,41 +967,56 @@ static void ProcessImport(CWallet * const pwallet, const UniValue& data, const i
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
         }
     }
-
+    
     // Import private keys.
     for (size_t i = 0; i < keys.size(); i++) {
         const std::string& privkey = keys[i].get_str();
-
         CKey key = DecodeSecret(privkey);
-
+    
         if (!key.IsValid()) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key encoding");
         }
-
+    
         CPubKey pubkey = key.GetPubKey();
         assert(key.VerifyPubKey(pubkey));
-
+    
         CKeyID vchAddress = pubkey.GetID();
-
+    
         if (pwallet->HaveKey(vchAddress)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Already have this key");
         }
-
-        pwallet->mapKeyMetadata[vchAddress].nCreateTime = timestamp;
-
+    
         if (!pwallet->AddKeyPubKey(key, pubkey)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding key to wallet");
         }
 
-        pwallet->UpdateTimeFirstKey(timestamp);
+        // If this is a wallet rather than a dummy, add the timestamp to the metadata
+        if (CWallet* v = dynamic_cast<CWallet*>(pwallet)) {
+           v->mapKeyMetadata[vchAddress].nCreateTime = timestamp;
+        }
     }
+}
 
+static void AddImportLabel(CWallet * const pwallet, const UniValue& data) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
+{
+    const UniValue& scriptPubKey = data["scriptPubKey"];
+    bool isScript = scriptPubKey.getType() == UniValue::VSTR;
+    const std::string& output = isScript ? scriptPubKey.get_str() : scriptPubKey["address"].get_str();
+    CTxDestination dest;
+    if (!isScript) { // Address
+        dest = DecodeDestination(output);
+    } else { // scriptPubKey
+        std::vector<unsigned char> vData(ParseHex(output));
+        CScript script = CScript(vData.begin(), vData.end());
+        ExtractDestination(script, dest);
+    }
+    const std::string& label = data.exists("label") ? data["label"].get_str() : "";
     // add destination to address book or update label
     if (IsValidDestination(dest)) {
         pwallet->SetAddressBook(dest, label, "receive");
     }
 }
-
+  
 static int64_t GetImportTimestamp(const UniValue& data, int64_t now)
 {
     if (data.exists("timestamp")) {
@@ -1115,13 +1128,16 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
 
         for (const UniValue& data : requests.getValues()) {
             const int64_t timestamp = std::max(GetImportTimestamp(data, now), minimumTimestamp);
-            // TODO: create a new dummy wallet which counts Usage
-            // TODO: run ProcessImport with the dummy wallet
-            // TODO: run IsSolvable on the address
-            // TODO: check all were used
+
             UniValue result = UniValue(UniValue::VOBJ);
             try {
+                // TODO: create a new dummy wallet which counts Usage
+                // TODO: run ProcessImport with the dummy wallet
+                // TODO: run IsSolvable on the address
+                // TODO: check all were used
                 ProcessImport(pwallet, data, timestamp);
+                    pwallet->UpdateTimeFirstKey(timestamp);
+                AddImportLabel(pwallet, data);
                 result.pushKV("success", UniValue(true));
             } catch (const UniValue& e) {
                 result.pushKV("success", UniValue(false));
