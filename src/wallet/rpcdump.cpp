@@ -819,12 +819,12 @@ protected:
     using ScriptUsedMap = std::map<CScriptID, bool>;
 
 public:
-    bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;
-    bool GetKey(const CKeyID &address, CKey& keyOut) override;
-    bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) override;
-    bool AddCScript(const CScript& redeemScript) override;
-    bool GetCScript(const CScriptID &hash, CScript& redeemScriptOut) override;
-    bool CBasicKeyStore::AddWatchOnly(const CScript &dest) override;
+    bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey);
+    bool GetKey(const CKeyID &address, CKey& keyOut);
+    bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut);
+    bool AddCScript(const CScript& redeemScript);
+    bool GetCScript(const CScriptID &hash, CScript& redeemScriptOut);
+    bool CBasicKeyStore::AddWatchOnly(const CScript &dest);
     bool AllUsed() const;
 };
 bool UsageTrackingKeystore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
