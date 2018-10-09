@@ -814,9 +814,9 @@ UniValue dumpwallet(const JSONRPCRequest& request)
 class UsageTrackingKeystore : public CBasicKeyStore
 {
 protected:
-    using KeyUsedMap = std::map<CKeyID, bool>;
-    using WatchKeyUsedMap = std::map<CKeyID, bool>;
-    using ScriptUsedMap = std::map<CScriptID, bool>;
+  std::map<CKeyID, bool> mapKeysUsed GUARDED_BY(cs_KeyStore);
+  std::map<CKeyID, bool> mapWatchKeysUsed GUARDED_BY(cs_KeyStore);
+  std::map<CScriptID, bool>; mapScriptsUsed GUARDED_BY(cs_KeyStore);
 
 public:
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey);
@@ -824,27 +824,27 @@ public:
     bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut);
     bool AddCScript(const CScript& redeemScript);
     bool GetCScript(const CScriptID &hash, CScript& redeemScriptOut);
-    bool CBasicKeyStore::AddWatchOnly(const CScript &dest);
+    bool AddWatchOnly(const CScript &dest);
     bool AllUsed() const;
 };
 bool UsageTrackingKeystore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 {
     LOCK(cs_KeyStore);
-    KeyUsedMap[key] = false;
+    mapKeysUsed[key] = false;
     return CBasicKeyStore::AddKeyPubKey(key, pubkey);
 }
 bool UsageTrackingKeystore::GetKey(const CKeyID &address, CKey &keyOut)
 {
     LOCK(cs_KeyStore);
-    KeyUsedMap[address] = true;
+    mapKeysUsed[address] = true;
     return CBasicKeyStore::GetKey(address, keyOut);
 }
 bool UsageTrackingKeystore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut)
 {
     if (CBasicKeyStore::GetPubKey(address, vchPubKeyOut)) {
         LOCK(cs_KeyStore);
-        KeyUsedMap[address] = true;
-        WatchKeyUsedMap[vchPubKeyOut.getID()] = true;
+        mapKeysUsed[address] = true;
+        mapWatchKeysUsed[vchPubKeyOut.getID()] = true;
         return true;
     }
     return false;
@@ -852,13 +852,13 @@ bool UsageTrackingKeystore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyO
 bool UsageTrackingKeystore::AddCScript(const CScript& redeemScript)
 {
     LOCK(cs_KeyStore);
-    ScriptUsedMap[CScriptID(redeemScript)] = false;
+    mapScriptsUsed[CScriptID(redeemScript)] = false;
     return CBasicKeyStore::AddCScript(redeemScript);
 }
 bool UsageTrackingKeystore::GetCScript(const CScriptID &hash, CScript& redeemScriptOut)
 {
     LOCK(cs_KeyStore);
-    ScriptUsedMap[hash] = true;
+    mapScriptsUsed[hash] = true;
     return CBasicKeyStore::GetCScript(hash, redeemScriptOut)
 }
 bool UsageTrackingKeystore::AddWatchOnly(const CScript &dest)
@@ -866,19 +866,19 @@ bool UsageTrackingKeystore::AddWatchOnly(const CScript &dest)
     LOCK(cs_KeyStore);
     CPubKey pubKey;
     if (ExtractPubKey(dest, pubKey)) {
-        WatchKeyUsedMap[pubKey.getID()] = false;
+        mapWatchKeysUsed[pubKey.getID()] = false;
     }
     return CBasicKeyStore::AddWatchOnly(dest);
 }
 bool UsageTrackingKeystore::AllUsed() const {
     LOCK(cs_KeyStore);
-    for (auto const& x : WatchKeyUsedMap)
+    for (auto const& x : mapWatchKeysUsed)
         if (!x.second)
           return false;
-    for (auto const& x : ScriptUsedMap)
+    for (auto const& x : mapScriptsUsed)
         if (!x.second)
           return false;
-    for (auto const& x : KeyUsedMap)
+    for (auto const& x : mapKeysUsed)
         if (!x.second)
           return false;
     return true;
