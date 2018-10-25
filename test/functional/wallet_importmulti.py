@@ -207,25 +207,6 @@ class ImportMultiTest(BitcoinTestFramework):
         assert_equal(result[0]['error']['code'], -4)
         assert_equal(result[0]['error']['message'], 'The wallet already contains the private key for this address or script')
 
-        # Address + Private key + watchonly
-        self.log.info("Should not import an address with private key and with watchonly")
-        address = self.nodes[0].getaddressinfo(self.nodes[0].getnewaddress())
-        result = self.nodes[1].importmulti([{
-            "scriptPubKey": {
-                "address": address['address']
-            },
-            "timestamp": "now",
-            "keys": [ self.nodes[0].dumpprivkey(address['address']) ],
-            "watchonly": True
-        }])
-        assert_equal(result[0]['success'], False)
-        assert_equal(result[0]['error']['code'], -8)
-        assert_equal(result[0]['error']['message'], 'Watch-only addresses should not include private keys')
-        address_assert = self.nodes[1].getaddressinfo(address['address'])
-        assert_equal(address_assert['iswatchonly'], False)
-        assert_equal(address_assert['ismine'], False)
-        assert_equal('timestamp' in address_assert, False)
-
         # ScriptPubKey + Private key + internal
         self.log.info("Should import a scriptPubKey with internal and with private key")
         address = self.nodes[0].getaddressinfo(self.nodes[0].getnewaddress())
@@ -348,21 +329,6 @@ class ImportMultiTest(BitcoinTestFramework):
         self.nodes[1].sendtoaddress(multi_sig_script['address'], 10.00)
         self.nodes[1].generate(1)
         timestamp = self.nodes[1].getblock(self.nodes[1].getbestblockhash())['mediantime']
-
-        self.log.info("Should import a p2sh with respective redeem script and private keys")
-        result = self.nodes[1].importmulti([{
-            "scriptPubKey": {
-                "address": multi_sig_script['address']
-            },
-            "timestamp": "now",
-            "redeemscript": multi_sig_script['redeemScript'],
-            "keys": [ self.nodes[0].dumpprivkey(sig_address_1['address']), self.nodes[0].dumpprivkey(sig_address_2['address'])],
-            "watchonly": True
-        }])
-        assert_equal(result[0]['success'], False)
-        assert_equal(result[0]['error']['code'], -8)
-        assert_equal(result[0]['error']['message'], 'Watch-only addresses should not include private keys')
-
 
         # Address + Public key + !Internal + Wrong pubkey
         self.log.info("Should not import an address with a wrong public key")
