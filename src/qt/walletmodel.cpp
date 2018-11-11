@@ -189,10 +189,6 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             total += rcp.amount;
         }
     }
-    if(setAddress.size() != nAddresses)
-    {
-        return DuplicateAddress;
-    }
 
     CAmount nBalance = m_wallet->getAvailableBalance(coinControl);
 

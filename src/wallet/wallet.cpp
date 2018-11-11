@@ -2600,7 +2600,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
         CTxDestination destination;
         if (ExtractDestination(recipient.scriptPubKey, destination) &&
             !destinations.insert(destination).second) {
-            strFailReason = _("Transaction destinations must be distinct");
+            strFailReason = _("Duplicate address found: addresses should only be used once each.");
             return false;
         }
 

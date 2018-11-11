@@ -227,7 +227,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         dec_tx  = self.nodes[2].decoderawtransaction(rawtx)
         assert_equal(utx['txid'], dec_tx['vin'][0]['txid'])
 
-        assert_raises_rpc_error(-4, "Transaction destinations must be distinct", self.nodes[2].fundrawtransaction, rawtx, {'changeAddress':address})
+        assert_raises_rpc_error(-4, "Duplicate address found: addresses should only be used once each.", self.nodes[2].fundrawtransaction, rawtx, {'changeAddress':address})
 
         change = self.nodes[2].getnewaddress()
         assert_raises_rpc_error(-8, "changePosition out of bounds", self.nodes[2].fundrawtransaction, rawtx, {'changeAddress':change, 'changePosition':2})
