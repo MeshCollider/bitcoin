@@ -204,6 +204,12 @@ public:
 
     //! Return whether transaction output belongs to wallet.
     virtual isminetype txoutIsMine(const CTxOut& txout) = 0;
+    
+    //! Return whether a scriptPubKey belongs to wallet.
+    virtual isminetype scriptIsMine(const CScript& scriptPubKey) = 0;
+    
+    //! Return whether a transaction destination belongs to wallet.
+    virtual isminetype destIsMine(const CTxDestination& dest) = 0;
 
     //! Return debit amount if transaction input belongs to wallet.
     virtual CAmount getDebit(const CTxIn& txin, isminefilter filter) = 0;

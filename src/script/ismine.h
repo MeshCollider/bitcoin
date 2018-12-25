@@ -10,7 +10,6 @@
 
 #include <stdint.h>
 
-class CKeyStore;
 class CScript;
 
 /** IsMine() return codes */
@@ -24,7 +23,13 @@ enum isminetype
 /** used for bitflags of isminetype */
 typedef uint8_t isminefilter;
 
-isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
-isminetype IsMine(const CKeyStore& keystore, const CTxDestination& dest);
+/** An interface for different types of IsMine logic. */
+class IsMineProvider
+{
+public:
+    virtual ~IsMineProvider() {}
+    virtual isminetype IsMine(const CScript& scriptPubKey) const { return false; }
+    virtual isminetype IsMine(const CTxDestination& dest) const { return false; }
+};
 
 #endif // BITCOIN_SCRIPT_ISMINE_H

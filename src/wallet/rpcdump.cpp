@@ -228,7 +228,7 @@ UniValue abortrescan(const JSONRPCRequest& request)
 static void ImportAddress(CWallet*, const CTxDestination& dest, const std::string& strLabel);
 static void ImportScript(CWallet* const pwallet, const CScript& script, const std::string& strLabel, bool isRedeemScript) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    if (!isRedeemScript && ::IsMine(*pwallet, script) == ISMINE_SPENDABLE) {
+    if (!isRedeemScript && pwallet->IsMine(script) == ISMINE_SPENDABLE) {
         throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script");
     }
 
@@ -1069,7 +1069,7 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
         }
 
         // Check whether we have any work to do
-        if (::IsMine(*pwallet, script) & ISMINE_SPENDABLE) {
+        if (pwallet->IsMine(script) & ISMINE_SPENDABLE) {
             throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script");
         }
 
@@ -1100,7 +1100,7 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
                 throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
             }
         }
-        if (!have_solving_data || !::IsMine(*pwallet, script)) { // Always call AddWatchOnly for non-solvable watch-only, so that watch timestamp gets updated
+        if (!have_solving_data || !pwallet->IsMine(script)) { // Always call AddWatchOnly for non-solvable watch-only, so that watch timestamp gets updated
             if (!pwallet->AddWatchOnly(script, timestamp)) {
                 throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
             }

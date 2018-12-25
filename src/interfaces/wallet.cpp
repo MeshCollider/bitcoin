@@ -397,6 +397,18 @@ public:
         LOCK(m_wallet.cs_wallet);
         return m_wallet.IsMine(txout);
     }
+    isminetype scriptIsMine(const CScript& scriptPubKey) override
+    {
+        auto locked_chain = m_wallet.chain().lock();
+        LOCK(m_wallet.cs_wallet);
+        return m_wallet.IsMine(scriptPubKey);
+    }
+    isminetype destIsMine(const CTxDestination& dest) override
+    {
+        auto locked_chain = m_wallet.chain().lock();
+        LOCK(m_wallet.cs_wallet);
+        return m_wallet.IsMine(dest);
+    }
     CAmount getDebit(const CTxIn& txin, isminefilter filter) override
     {
         auto locked_chain = m_wallet.chain().lock();
