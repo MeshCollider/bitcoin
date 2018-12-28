@@ -559,7 +559,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
 
     if (!registers.count("privatekeys"))
         throw std::runtime_error("privatekeys register variable must be set.");
-    CBasicKeyStore tempKeystore;
+    FlatSigningProvider signing_provider;
     UniValue keysObj = registers["privatekeys"];
 
     for (unsigned int kidx = 0; kidx < keysObj.size(); kidx++) {
@@ -569,7 +569,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
         if (!key.IsValid()) {
             throw std::runtime_error("privatekey not valid");
         }
-        tempKeystore.AddKey(key);
+        signing_provider.AddKey(key);
     }
 
     // Add previous txouts given in the RPC call:
@@ -633,7 +633,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
         }
     }
 
-    const CKeyStore& keystore = tempKeystore;
+    const SigningProvider& signing_provider = tempKeystore;
 
     bool fHashSingle = ((nHashType & ~SIGHASH_ANYONECANPAY) == SIGHASH_SINGLE);
 
@@ -650,7 +650,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
         SignatureData sigdata = DataFromTransaction(mergedTx, i, coin.out);
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mergedTx.vout.size()))
-            ProduceSignature(keystore, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata);
+            ProduceSignature(signing_provider, MutableTransactionSignatureCreator(&mergedTx, i, amount, nHashType), prevPubKey, sigdata);
 
         UpdateInput(txin, sigdata);
     }
