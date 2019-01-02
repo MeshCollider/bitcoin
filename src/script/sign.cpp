@@ -709,3 +709,15 @@ FlatSigningProvider Merge(const FlatSigningProvider& a, const FlatSigningProvide
     ret.origins.insert(b.origins.begin(), b.origins.end());
     return ret;
 }
+
+void AddRelatedKeys(FlatSigningProvider& provider, const CKey& key)
+{
+    // this mimics the behaviour of ImplicitlyLearnRelatedKeyScripts for a FlatSigningProvider
+    CPubKey pubkey = key.GetPubKey();
+    provider.keys.emplace(pubkey.GetID(), key);
+    if (pubkey.IsCompressed()) {
+        CScript script = GetScriptForDestination(WitnessV0KeyHash(key_id));
+        CScriptID id(script);
+        provider.keys.emplace(id, std::move(script));
+    }
+}

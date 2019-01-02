@@ -73,6 +73,7 @@ struct FlatSigningProvider final : public SigningProvider
 };
 
 FlatSigningProvider Merge(const FlatSigningProvider& a, const FlatSigningProvider& b);
+void AddRelatedKeys(FlatSigningProvider& provider, const CKey& key);
 
 /** Interface for signature creators. */
 class BaseSignatureCreator {
