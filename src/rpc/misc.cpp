@@ -138,7 +138,16 @@ static UniValue createmultisig(const JSONRPCRequest& request)
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("address", EncodeDestination(dest));
-    result.pushKV("redeemScript", HexStr(inner.begin(), inner.end()));
+    if (output_type == OutputType::BECH32) {
+        result.pushKV("witnessScript", HexStr(inner.begin(), inner.end()));
+    } else if (output_type == OutputType::P2SH_SEGWIT) {
+        result.pushKV("witnessScript", HexStr(inner.begin(), inner.end()));
+        CTxDestination witdest = WitnessV0ScriptHash(inner);
+        CScript witprog = GetScriptForDestination(witdest);
+        result.pushKV("redeemScript", HexStr(witprog.begin(), witprog.end()));
+    } else {
+        result.pushKV("redeemScript", HexStr(inner.begin(), inner.end()));
+    }
 
     return result;
 }

@@ -59,17 +59,20 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
 
         msig = node2.createmultisig(self.nsigs, self.pub, self.output_type)
         madd = msig["address"]
-        mredeem = msig["redeemScript"]
         if self.output_type == 'bech32':
             assert madd[0:4] == "bcrt"  # actually a bech32 address
 
         # compare against addmultisigaddress
         msigw = node1.addmultisigaddress(self.nsigs, self.pub, None, self.output_type)
         maddw = msigw["address"]
-        mredeemw = msigw["redeemScript"]
         # addmultisigiaddress and createmultisig work the same
+        if "redeemScript" in msig or "redeemScript" in msigw:
+            assert msig["redeemScript"] == msigw["redeemScript"]
+            mredeem = msig["redeemScript"]
+        if "witnessScript" in msig or "witnessScript" in msigw:
+            assert msig["witnessScript"] == msigw["witnessScript"]
+            mwit = msig["witnessScript"]
         assert maddw == madd
-        assert mredeemw == mredeem
 
         txid = node0.sendtoaddress(madd, 40)
 
@@ -79,7 +82,7 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
         vout = vout[0]
         scriptPubKey = tx["vout"][vout]["scriptPubKey"]["hex"]
         value = tx["vout"][vout]["value"]
-        prevtxs = [{"txid": txid, "vout": vout, "scriptPubKey": scriptPubKey, "redeemScript": mredeem, "amount": value}]
+        prevtxs = [{"txid": txid, "vout": vout, "scriptPubKey": scriptPubKey, "redeemScript": mredeem, "witnessScript": mwit, "amount": value}]
 
         node0.generate(1)
 

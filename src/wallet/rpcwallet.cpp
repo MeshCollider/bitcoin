@@ -995,7 +995,8 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
                 RPCResult{
             "{\n"
             "  \"address\":\"multisigaddress\",    (string) The value of the new multisig address.\n"
-            "  \"redeemScript\":\"script\"         (string) The string value of the hex-encoded redemption script.\n"
+            "  \"redeemScript\":\"script\"         (string) The string value of the hex-encoded redemption script (for P2SH).\n"
+            "  \"witnessScript\":\"script\"        (string) The string value of the hex-encoded witness script (for P2WSH or P2SH-P2WSH).\n"
             "}\n"
                 },
                 RPCExamples{
@@ -1042,7 +1043,16 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("address", EncodeDestination(dest));
-    result.pushKV("redeemScript", HexStr(inner.begin(), inner.end()));
+    if (output_type == OutputType::BECH32) {
+        result.pushKV("witnessScript", HexStr(inner.begin(), inner.end()));
+    } else if (output_type == OutputType::P2SH_SEGWIT) {
+        result.pushKV("witnessScript", HexStr(inner.begin(), inner.end()));
+        CTxDestination witdest = WitnessV0ScriptHash(inner);
+        CScript witprog = GetScriptForDestination(witdest);
+        result.pushKV("redeemScript", HexStr(witprog.begin(), witprog.end()));
+    } else {
+        result.pushKV("redeemScript", HexStr(inner.begin(), inner.end()));
+    }
     return result;
 }
 
